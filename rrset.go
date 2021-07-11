@@ -6,24 +6,37 @@ import (
 	"github.com/miekg/dns"
 )
 
+var _ RRSetInterface = &RRSet{}
+
 var (
 	ErrRRName   = fmt.Errorf("Not equals rr name")
 	ErrRRType   = fmt.Errorf("Not equals rrtype")
+	ErrClass    = fmt.Errorf("Not equals class")
 	ErrConflict = fmt.Errorf("Conflict RR")
 )
 
 type RRSet struct {
 	name   string
 	rrtype uint16
+	class  dns.Class
 	rrs    []dns.RR
 }
 
-func NewRRSet(name string, rrtype uint16, rrs []dns.RR) *RRSet {
+func NewRRSet(name string, rrtype uint16, class dns.Class, rrs []dns.RR) *RRSet {
 	name = dns.CanonicalName(name)
 	return &RRSet{
 		name:   name,
 		rrtype: rrtype,
+		class:  class,
 		rrs:    rrs,
+	}
+}
+func NewRRSetFromRR(rr dns.RR) *RRSet {
+	return &RRSet{
+		name:   dns.CanonicalName(rr.Header().Name),
+		rrtype: rr.Header().Rrtype,
+		class:  dns.Class(rr.Header().Class),
+		rrs:    []dns.RR{rr},
 	}
 }
 
@@ -34,6 +47,11 @@ func (r *RRSet) GetName() string {
 // return rtype
 func (r *RRSet) GetRRtype() uint16 {
 	return r.rrtype
+}
+
+// return dns.Class
+func (r *RRSet) GetClass() dns.Class {
+	return r.class
 }
 
 // return rr slice
@@ -47,6 +65,10 @@ func (r *RRSet) AddRR(rr dns.RR) error {
 	}
 	if rr.Header().Rrtype != r.rrtype {
 		return ErrRRType
+	}
+	if rr.Header().Class != uint16(r.class) {
+		fmt.Printf("%d %d\n", rr.Header().Class, r.class)
+		return ErrClass
 	}
 	if len(r.rrs) >= 1 {
 		if rr.Header().Rrtype == dns.TypeCNAME {
@@ -74,6 +96,12 @@ func (r *RRSet) RemoveRR(rr dns.RR) error {
 	}
 	r.rrs = res
 	return nil
+}
+
+func (r *RRSet) Copy() RRSetInterface {
+	copy := &RRSet{}
+	*copy = *r
+	return copy
 }
 
 func (r *RRSet) Len() int {

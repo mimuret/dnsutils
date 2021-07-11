@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestNameNode(t *testing.T) {
+func TestDNSUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "dnsutils Suite")
 }
@@ -23,33 +23,38 @@ var _ = Describe("NameNode", func() {
 		aaaa11                                          = MustNewRR("example.jp. IN AAAA 2001:db8::1")
 		aaaa12                                          = MustNewRR("example.jp. IN AAAA 2001:db8::2")
 		blueA                                           = MustNewRR("blue.www4.example.jp. IN AAAA 2001:db8::1")
+		txt1                                            = MustNewRR(`example.jp. 300 IN TXT "hogehoge"`)
+		txt2                                            = MustNewRR(`example.jp. 300 IN TXT "hugahuga"`)
+		cname                                           = MustNewRR(`example.jp. 300 IN CNAME www.example.jp.`)
+		dname                                           = MustNewRR(`example.jp. 300 IN DNAME example.net.`)
 	)
 	BeforeEach(func() {
-		root = dnsutils.NewNameNode("example.jp")
-		www1 = dnsutils.NewNameNode("www1.example.jp")
-		www2 = dnsutils.NewNameNode("www2.example.jp")
-		www3 = dnsutils.NewNameNode("www3.example.jp")
-		www4 = dnsutils.NewNameNode("www4.example.jp")
+		root = dnsutils.NewNameNode("example.jp", dns.ClassINET)
+		www1 = dnsutils.NewNameNode("www1.example.jp", dns.ClassINET)
+		www2 = dnsutils.NewNameNode("www2.example.jp", dns.ClassINET)
+		www3 = dnsutils.NewNameNode("www3.example.jp", dns.ClassINET)
+		www4 = dnsutils.NewNameNode("www4.example.jp", dns.ClassINET)
 		root.AddChildNode(www1)
 		root.AddChildNode(www2)
 		root.AddChildNode(www3)
 		root.AddChildNode(www4)
-		blue = dnsutils.NewNameNode("blue.www4.example.jp")
+		blue = dnsutils.NewNameNode("blue.www4.example.jp", dns.ClassINET)
 		www4.AddChildNode(blue)
-		alpha = dnsutils.NewNameNode("alpha.blue.www4.example.jp")
+		alpha = dnsutils.NewNameNode("alpha.blue.www4.example.jp", dns.ClassINET)
 		blue.AddChildNode(alpha)
-		beta = dnsutils.NewNameNode("beta.alpha.blue.www4.example.jp")
+		beta = dnsutils.NewNameNode("beta.alpha.blue.www4.example.jp", dns.ClassINET)
 		alpha.AddChildNode(beta)
-		aRRSet = dnsutils.NewRRSet("example.jp", dns.TypeA, []dns.RR{a11, a12})
-		aaaaRRSet = dnsutils.NewRRSet("example.jp", dns.TypeAAAA, []dns.RR{aaaa11, aaaa12})
+		aRRSet = dnsutils.NewRRSet("example.jp", dns.TypeA, dns.ClassINET, []dns.RR{a11, a12})
+		aaaaRRSet = dnsutils.NewRRSet("example.jp", dns.TypeAAAA, dns.ClassINET, []dns.RR{aaaa11, aaaa12})
 		root.SetRRSet(aRRSet)
 		root.SetRRSet(aaaaRRSet)
-		blueRRSet = dnsutils.NewRRSet("blue.www4.example.jp", dns.TypeA, []dns.RR{blueA})
+		blueRRSet = dnsutils.NewRRSet("blue.www4.example.jp", dns.TypeA, dns.ClassINET, []dns.RR{blueA})
 		blue.SetRRSet(blueRRSet)
+
 	})
 	Context("Test for NameNode", func() {
 		It("GetName returned canonical Name", func() {
-			nn := dnsutils.NewNameNode("example.jp")
+			nn := dnsutils.NewNameNode("example.jp", dns.ClassINET)
 			Expect(nn).NotTo(BeNil())
 			Expect(nn.GetName()).To(Equal("example.jp."))
 		})
@@ -122,7 +127,7 @@ var _ = Describe("NameNode", func() {
 	})
 	Context("Test AddChildNode", func() {
 		It("can set directly child node", func() {
-			www5 := dnsutils.NewNameNode("www5.example.jp")
+			www5 := dnsutils.NewNameNode("www5.example.jp", dns.ClassINET)
 			err := root.AddChildNode(www5)
 			Expect(err).To(BeNil())
 			nameNode, ok := root.GetNameNode("www5.example.jp")
@@ -130,7 +135,7 @@ var _ = Describe("NameNode", func() {
 			Expect(nameNode).To(Equal(www5))
 		})
 		It("can't set not directly child node", func() {
-			red := dnsutils.NewNameNode("red.www5.example.jp")
+			red := dnsutils.NewNameNode("red.www5.example.jp", dns.ClassINET)
 			err := root.AddChildNode(red)
 			Expect(err).NotTo(BeNil())
 		})
@@ -141,7 +146,7 @@ var _ = Describe("NameNode", func() {
 	})
 	Context("Test SetNameNode", func() {
 		It("can set directly child node", func() {
-			www5 := dnsutils.NewNameNode("www5.example.jp")
+			www5 := dnsutils.NewNameNode("www5.example.jp", dns.ClassINET)
 			err := root.SetNameNode(www5)
 			Expect(err).To(BeNil())
 			nameNode, ok := root.GetNameNode("www5.example.jp")
@@ -149,7 +154,7 @@ var _ = Describe("NameNode", func() {
 			Expect(nameNode).To(Equal(www5))
 		})
 		It("can set not directly child node", func() {
-			red := dnsutils.NewNameNode("red.www5.example.jp")
+			red := dnsutils.NewNameNode("red.www5.example.jp", dns.ClassINET)
 			err := root.SetNameNode(red)
 			Expect(err).To(BeNil())
 			nameNode, ok := root.GetNameNode("red.www5.example.jp")
@@ -157,8 +162,8 @@ var _ = Describe("NameNode", func() {
 			Expect(nameNode).To(Equal(red))
 		})
 		It("can replace exist node", func() {
-			newwww1 := dnsutils.NewNameNode("www1.example.jp")
-			set := dnsutils.NewRRSet("www.example.jp.", dns.TypeA, []dns.RR{
+			newwww1 := dnsutils.NewNameNode("www1.example.jp", dns.ClassINET)
+			set := dnsutils.NewRRSet("www.example.jp.", dns.TypeA, dns.ClassINET, []dns.RR{
 				MustNewRR("www1.example.jp. 300 IN A 192.168.10.0"),
 			})
 			newwww1.SetRRSet(set)
@@ -212,50 +217,61 @@ var _ = Describe("NameNode", func() {
 	})
 	Context("Test for SetRRSet", func() {
 		It("can set rrset", func() {
-			txt1 := MustNewRR(`example.jp. 300 IN TXT "hogehoge"`)
-			txt2 := MustNewRR(`example.jp. 300 IN TXT "hugahuga"`)
-			set := dnsutils.NewRRSet("example.jp.", dns.TypeTXT, []dns.RR{txt1})
+			set := dnsutils.NewRRSetFromRR(txt1)
 			err := root.SetRRSet(set)
 			Expect(err).To(BeNil())
 			Expect(root.GetRRSet(dns.TypeTXT)).To(Equal(set))
-			set = dnsutils.NewRRSet("example.jp.", dns.TypeTXT, []dns.RR{txt1, txt2})
+			set = dnsutils.NewRRSetFromRR(txt2)
+			dnsutils.NewRRSetFromRR(txt2)
 			err = root.SetRRSet(set)
 			Expect(err).To(BeNil())
 			Expect(root.GetRRSet(dns.TypeTXT)).To(Equal(set))
 		})
 		It("not able to set rrset, if rrset name is ignore ", func() {
-			set := dnsutils.NewRRSet("example2.jp.", dns.TypeTXT, nil)
+			set := dnsutils.NewRRSet("example2.jp.", dns.TypeTXT, dns.ClassINET, nil)
 			err := root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("jp.", dns.TypeTXT, nil)
+			set = dnsutils.NewRRSet("jp.", dns.TypeTXT, dns.ClassINET, nil)
 			err = root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("www.example.jp.", dns.TypeTXT, nil)
+			set = dnsutils.NewRRSet("www.example.jp.", dns.TypeTXT, dns.ClassINET, nil)
 			err = root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
 		})
 		It("not able to set both cname and other ", func() {
-			set := dnsutils.NewRRSet("example.jp.", dns.TypeCNAME, nil)
+			set := dnsutils.NewRRSetFromRR(cname)
 			err := root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
 		})
 		It("not able to set both dname and other ", func() {
-			set := dnsutils.NewRRSet("example.jp.", dns.TypeDNAME, nil)
+			set := dnsutils.NewRRSetFromRR(dname)
 			err := root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
 		})
 	})
 	Context("Test for RemoveRRSet", func() {
 		It("can removeset rrset", func() {
-			set := dnsutils.NewRRSet("example2.jp.", dns.TypeTXT, nil)
+			set := dnsutils.NewRRSet("example2.jp.", dns.TypeTXT, dns.ClassINET, nil)
 			err := root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("jp.", dns.TypeTXT, nil)
+			set = dnsutils.NewRRSet("jp.", dns.TypeTXT, dns.ClassINET, nil)
 			err = root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("www.example.jp.", dns.TypeTXT, nil)
+			set = dnsutils.NewRRSet("www.example.jp.", dns.TypeTXT, dns.ClassINET, nil)
 			err = root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
+		})
+	})
+	Context("Test for RRSetLen", func() {
+		It("return the number of not empty rrset", func() {
+			Expect(root.RRSetLen()).To(Equal(2))
+			set := dnsutils.NewRRSet("example.jp.", dns.TypeTXT, dns.ClassINET, nil)
+			err := root.SetRRSet(set)
+			Expect(err).To(BeNil())
+			Expect(root.RRSetLen()).To(Equal(2))
+			err = set.AddRR(txt1)
+			Expect(err).To(BeNil())
+			Expect(root.RRSetLen()).To(Equal(3))
 		})
 	})
 })

@@ -19,25 +19,25 @@ var _ = Describe("RRSet", func() {
 	)
 	Context("test for GetName", func() {
 		It("return canonical name", func() {
-			rrset := dnsutils.NewRRSet("example.jp", dns.TypeA, nil)
+			rrset := dnsutils.NewRRSet("example.jp", dns.TypeA, dns.ClassINET, nil)
 			Expect(rrset.GetName()).To(Equal("example.jp."))
 		})
 	})
 	Context("test for GetType", func() {
 		It("return uint16 rrtype", func() {
-			rrset := dnsutils.NewRRSet("example.jp", dns.TypeA, nil)
+			rrset := dnsutils.NewRRSet("example.jp", dns.TypeA, dns.ClassINET, nil)
 			Expect(rrset.GetRRtype()).To(Equal(dns.TypeA))
 		})
 	})
 	Context("test for GetRRs", func() {
 		It("return RR slice", func() {
-			rrset := dnsutils.NewRRSet("example.jp", dns.TypeA, []dns.RR{a11, a12})
+			rrset := dnsutils.NewRRSet("example.jp", dns.TypeA, dns.ClassINET, []dns.RR{a11, a12})
 			Expect(rrset.GetRRs()).To(Equal([]dns.RR{a11, a12}))
 		})
 	})
 	Context("test for AddRR (Normal)", func() {
 		It("can be add uniq RR", func() {
-			rrset := dnsutils.NewRRSet("example.jp", dns.TypeA, nil)
+			rrset := dnsutils.NewRRSet("example.jp", dns.TypeA, dns.ClassINET, nil)
 			err := rrset.AddRR(a11)
 			Expect(err).To(BeNil())
 			Expect(rrset.GetRRs()).To(Equal([]dns.RR{a11}))
@@ -51,7 +51,7 @@ var _ = Describe("RRSet", func() {
 	})
 	Context("test for AddRR(SOA RR)", func() {
 		It("can not be add multiple RR", func() {
-			rrset := dnsutils.NewRRSet("example.jp", dns.TypeSOA, []dns.RR{soa1})
+			rrset := dnsutils.NewRRSet("example.jp", dns.TypeSOA, dns.ClassINET, []dns.RR{soa1})
 			Expect(rrset.GetRRs()).To(Equal([]dns.RR{soa1}))
 
 			err := rrset.AddRR(soa2)
@@ -61,7 +61,7 @@ var _ = Describe("RRSet", func() {
 	})
 	Context("test for AddRR(CNAME RR)", func() {
 		It("can not be add multiple RR", func() {
-			rrset := dnsutils.NewRRSet("example.jp", dns.TypeCNAME, []dns.RR{cname1})
+			rrset := dnsutils.NewRRSet("example.jp", dns.TypeCNAME, dns.ClassINET, []dns.RR{cname1})
 			Expect(rrset.GetRRs()).To(Equal([]dns.RR{cname1}))
 
 			err := rrset.AddRR(cname2)

@@ -16,11 +16,13 @@ type ZoneInterface interface {
 	// return canonical zone name
 	GetName() string
 	GetRootNode() NameNodeInterface
+	GetClass() dns.Class
 }
 
 type NameNodeInterface interface {
 	// return canonical name
 	GetName() string
+	GetClass() dns.Class
 
 	// isStrict=true, NameNode is target name
 	// isStrict=false, NameNode is nearly parrent path node
@@ -37,6 +39,9 @@ type NameNodeInterface interface {
 
 	// iterate by RRSetInterface
 	IterateNameRRSet(func(RRSetInterface) error) error
+
+	// iterate by RRSetInterface
+	IterateNameNode(func(NameNodeInterface) error) error
 
 	// add directly child node
 	AddChildNode(NameNodeInterface) error
@@ -59,6 +64,8 @@ type NameNodeInterface interface {
 	SetRRSet(RRSetInterface) error
 	// remove rrset
 	RemoveRRSet(rrtype uint16) error
+	// return not empty rrset
+	RRSetLen() int
 }
 
 type RRSetInterface interface {
@@ -66,14 +73,14 @@ type RRSetInterface interface {
 	GetName() string
 	// return rtype
 	GetRRtype() uint16
+	// return dns.Class
+	GetClass() dns.Class
 	// return rr slice
 	GetRRs() []dns.RR
 	// number of rdata
 	Len() int
-}
-
-type ChangeableRRSetInterface interface {
-	RRSetInterface
 	AddRR(dns.RR) error
 	RemoveRR(dns.RR) error
+
+	Copy() RRSetInterface
 }

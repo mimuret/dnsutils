@@ -20,14 +20,16 @@ var _ NameNodeInterface = &NameNode{}
 type NameNode struct {
 	sync.Mutex
 	name          string
+	class         dns.Class
 	rrsetValue    atomic.Value
 	childrenValue atomic.Value
 }
 
-func NewNameNode(name string) *NameNode {
+func NewNameNode(name string, class dns.Class) *NameNode {
 	name = dns.CanonicalName(name)
 	nnn := &NameNode{
-		name: name,
+		name:  name,
+		class: class,
 	}
 	nnn.rrsetValue.Store(make(map[uint16]RRSetInterface))
 	nnn.childrenValue.Store(make(map[string]NameNodeInterface))
@@ -46,6 +48,10 @@ func (n *NameNode) children() map[string]NameNodeInterface {
 
 func (n *NameNode) GetName() string {
 	return n.name
+}
+
+func (n *NameNode) GetClass() dns.Class {
+	return n.class
 }
 
 func (n *NameNode) GetNameNode(name string) (NameNodeInterface, bool) {
@@ -75,13 +81,19 @@ func (n *NameNode) CopyChildNodes() map[string]NameNodeInterface {
 func (n *NameNode) CopyRRSetMap() map[uint16]RRSetInterface {
 	rrsetMap := map[uint16]RRSetInterface{}
 	for rrtype, set := range n.rrsetMap() {
-		rrsetMap[rrtype] = set
+		if set != nil {
+			rrsetMap[rrtype] = set.Copy()
+		}
 	}
 	return rrsetMap
 }
 
 func (n *NameNode) GetRRSet(rrtype uint16) RRSetInterface {
-	return n.rrsetMap()[rrtype]
+	set := n.rrsetMap()[rrtype]
+	if set == nil {
+		return nil
+	}
+	return set.Copy()
 }
 
 func (n *NameNode) SetValue(nn NameNodeInterface) error {
@@ -98,6 +110,18 @@ func (n *NameNode) SetValue(nn NameNodeInterface) error {
 func (n *NameNode) IterateNameRRSet(f func(RRSetInterface) error) error {
 	for _, set := range n.rrsetMap() {
 		if err := f(set); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (n *NameNode) IterateNameNode(f func(NameNodeInterface) error) error {
+	if err := f(n); err != nil {
+		return err
+	}
+	for _, nn := range n.children() {
+		if err := nn.IterateNameNode(f); err != nil {
 			return err
 		}
 	}
@@ -130,7 +154,7 @@ func (n *NameNode) SetNameNode(nn NameNodeInterface) error {
 		parentLabels := dns.SplitDomainName(searchNode.GetName())
 		childLabels := dns.SplitDomainName(nn.GetName())
 		childName := strings.Join(childLabels[len(childLabels)-len(parentLabels)-1:], ".")
-		childNode := NewNameNode(childName)
+		childNode := NewNameNode(childName, n.GetClass())
 		if err := searchNode.AddChildNode(childNode); err != nil {
 			return err
 		}
@@ -190,13 +214,14 @@ func (n *NameNode) SetRRSet(set RRSetInterface) error {
 	defer n.Unlock()
 	rrsetMap := n.rrsetMap()
 	rrsetMap[set.GetRRtype()] = set
-	if _, exist := rrsetMap[dns.TypeCNAME]; exist {
-		if len(rrsetMap) > 1 {
+
+	if !IsEmptyRRSet(rrsetMap[dns.TypeCNAME]) {
+		if n.RRSetLen() > 1 {
 			return ErrConflictCNAME
 		}
 	}
-	if _, exist := rrsetMap[dns.TypeDNAME]; exist {
-		if len(rrsetMap) > 1 {
+	if !IsEmptyRRSet(rrsetMap[dns.TypeDNAME]) {
+		if n.RRSetLen() > 1 {
 			return ErrConflictDNAME
 		}
 	}
@@ -211,4 +236,14 @@ func (n *NameNode) RemoveRRSet(rrtype uint16) error {
 	delete(rrsetMap, rrtype)
 	n.rrsetValue.Store(rrsetMap)
 	return nil
+}
+
+func (n *NameNode) RRSetLen() int {
+	i := 0
+	for _, set := range n.rrsetMap() {
+		if set.Len() > 0 {
+			i++
+		}
+	}
+	return i
 }
