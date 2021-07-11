@@ -109,6 +109,9 @@ func (u *TestUpdate) IsUpdateSupportedRtype(rrtype uint16) bool {
 	return false
 }
 
+func (t *TestUpdate) UpdateFailedPostProcess(error)   {}
+func (t *TestUpdate) UpdateSuccessPostProcess() error { return nil }
+
 func TestDDNS(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "ddns Suite")

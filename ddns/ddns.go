@@ -28,6 +28,12 @@ type UpdateInterface interface {
 	// remove name rr ignore SOA, NS
 	RemoveRR(rr dns.RR) error
 
+	// it can rollback zone records when UpdateProcessing returns error
+	UpdateFailedPostProcess(error)
+
+	// it can apply zone records when UpdateProcessing is successful
+	UpdateSuccessPostProcess() error
+
 	IsPrecheckSupportedRtype(uint16) bool
 	IsUpdateSupportedRtype(uint16) bool
 }
@@ -68,8 +74,13 @@ func (d *DDNS) ServeDNS(w dns.ResponseWriter, r *dns.Msg) (int, error) {
 
 	err = d.UpdateProcessing(zone, r)
 	if err != nil {
+		d.ui.UpdateFailedPostProcess(err)
 		return dns.RcodeServerFailure, nil
 	}
+	if err := d.ui.UpdateSuccessPostProcess(); err != nil {
+		return dns.RcodeServerFailure, nil
+	}
+
 	return dns.RcodeSuccess, nil
 }
 
