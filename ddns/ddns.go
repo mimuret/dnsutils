@@ -10,6 +10,9 @@ import (
 
 type GetZoneInterface interface {
 	// get zone data
+	// if not found zname zone, dnsutils.ZoneInterface is nil
+	// if found zname zone, dnsutils.ZoneInterface is not nil
+	// if error happens, dnsutils.ZoneInterface is undefined, error is not nil
 	GetZone(*dns.Msg) (dnsutils.ZoneInterface, error)
 }
 
@@ -57,6 +60,10 @@ func (d *DDNS) ServeDNS(w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	zone, err := d.gi.GetZone(r)
 	if err != nil {
 		return dns.RcodeServerFailure, nil
+	}
+	// zone not found
+	if zone == nil {
+		return dns.RcodeRefused, nil
 	}
 	rcode := d.CheckZoneSection(zone, r)
 	if rcode != dns.RcodeSuccess {
