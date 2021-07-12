@@ -58,3 +58,8 @@ func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16) RRSetInterface {
 	}
 	return set
 }
+
+func GetRDATA(rr dns.RR) string {
+	v := strings.SplitN(rr.String(), "\t", 5)
+	return v[5]
+}
