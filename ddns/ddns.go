@@ -56,7 +56,7 @@ type DDNS struct {
 	ui UpdateInterface
 }
 
-func (d *DDNS) ServeDNS(r *dns.Msg) (int, error) {
+func (d *DDNS) ServeUpdate(r *dns.Msg) (int, error) {
 	zone, err := d.gi.GetZone(r)
 	if err != nil {
 		return dns.RcodeServerFailure, nil
