@@ -44,11 +44,11 @@ var _ = Describe("NameNode", func() {
 		blue.AddChildNode(alpha)
 		beta = dnsutils.NewNameNode("beta.alpha.blue.www4.example.jp", dns.ClassINET)
 		alpha.AddChildNode(beta)
-		aRRSet = dnsutils.NewRRSet("example.jp", dns.TypeA, dns.ClassINET, []dns.RR{a11, a12})
-		aaaaRRSet = dnsutils.NewRRSet("example.jp", dns.TypeAAAA, dns.ClassINET, []dns.RR{aaaa11, aaaa12})
+		aRRSet = dnsutils.NewRRSet("example.jp", 0, dns.ClassINET, dns.TypeA, []dns.RR{a11, a12})
+		aaaaRRSet = dnsutils.NewRRSet("example.jp", 0, dns.ClassINET, dns.TypeAAAA, []dns.RR{aaaa11, aaaa12})
 		root.SetRRSet(aRRSet)
 		root.SetRRSet(aaaaRRSet)
-		blueRRSet = dnsutils.NewRRSet("blue.www4.example.jp", dns.TypeA, dns.ClassINET, []dns.RR{blueA})
+		blueRRSet = dnsutils.NewRRSet("blue.www4.example.jp", 0, dns.ClassINET, dns.TypeA, []dns.RR{blueA})
 		blue.SetRRSet(blueRRSet)
 
 	})
@@ -163,7 +163,7 @@ var _ = Describe("NameNode", func() {
 		})
 		It("can replace exist node", func() {
 			newwww1 := dnsutils.NewNameNode("www1.example.jp", dns.ClassINET)
-			set := dnsutils.NewRRSet("www.example.jp.", dns.TypeA, dns.ClassINET, []dns.RR{
+			set := dnsutils.NewRRSet("www.example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{
 				MustNewRR("www1.example.jp. 300 IN A 192.168.10.0"),
 			})
 			newwww1.SetRRSet(set)
@@ -228,13 +228,13 @@ var _ = Describe("NameNode", func() {
 			Expect(root.GetRRSet(dns.TypeTXT)).To(Equal(set))
 		})
 		It("not able to set rrset, if rrset name is ignore ", func() {
-			set := dnsutils.NewRRSet("example2.jp.", dns.TypeTXT, dns.ClassINET, nil)
+			set := dnsutils.NewRRSet("example2.jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
 			err := root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("jp.", dns.TypeTXT, dns.ClassINET, nil)
+			set = dnsutils.NewRRSet("jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
 			err = root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("www.example.jp.", dns.TypeTXT, dns.ClassINET, nil)
+			set = dnsutils.NewRRSet("www.example.jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
 			err = root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
 		})
@@ -251,13 +251,13 @@ var _ = Describe("NameNode", func() {
 	})
 	Context("Test for RemoveRRSet", func() {
 		It("can removeset rrset", func() {
-			set := dnsutils.NewRRSet("example2.jp.", dns.TypeTXT, dns.ClassINET, nil)
+			set := dnsutils.NewRRSet("example2.jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
 			err := root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("jp.", dns.TypeTXT, dns.ClassINET, nil)
+			set = dnsutils.NewRRSet("jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
 			err = root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("www.example.jp.", dns.TypeTXT, dns.ClassINET, nil)
+			set = dnsutils.NewRRSet("www.example.jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
 			err = root.SetRRSet(set)
 			Expect(err).NotTo(BeNil())
 		})
@@ -265,7 +265,7 @@ var _ = Describe("NameNode", func() {
 	Context("Test for RRSetLen", func() {
 		It("return the number of not empty rrset", func() {
 			Expect(root.RRSetLen()).To(Equal(2))
-			set := dnsutils.NewRRSet("example.jp.", dns.TypeTXT, dns.ClassINET, nil)
+			set := dnsutils.NewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
 			err := root.SetRRSet(set)
 			Expect(err).To(BeNil())
 			Expect(root.RRSetLen()).To(Equal(2))

@@ -75,6 +75,11 @@ type RRSetInterface interface {
 	GetRRtype() uint16
 	// return dns.Class
 	GetClass() dns.Class
+
+	// return rtype
+	GetTTL() uint32
+	SetTTL(uint32)
+
 	// return rr slice
 	GetRRs() []dns.RR
 	// number of rdata

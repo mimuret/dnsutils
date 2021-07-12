@@ -9,6 +9,7 @@ import (
 var _ RRSetInterface = &RRSet{}
 
 var (
+	ErrTTL      = fmt.Errorf("Not equals ttl")
 	ErrRRName   = fmt.Errorf("Not equals rr name")
 	ErrRRType   = fmt.Errorf("Not equals rrtype")
 	ErrClass    = fmt.Errorf("Not equals class")
@@ -17,15 +18,17 @@ var (
 
 type RRSet struct {
 	name   string
+	ttl    uint32
 	rrtype uint16
 	class  dns.Class
 	rrs    []dns.RR
 }
 
-func NewRRSet(name string, rrtype uint16, class dns.Class, rrs []dns.RR) *RRSet {
+func NewRRSet(name string, ttl uint32, class dns.Class, rrtype uint16, rrs []dns.RR) *RRSet {
 	name = dns.CanonicalName(name)
 	return &RRSet{
 		name:   name,
+		ttl:    ttl,
 		rrtype: rrtype,
 		class:  class,
 		rrs:    rrs,
@@ -34,6 +37,7 @@ func NewRRSet(name string, rrtype uint16, class dns.Class, rrs []dns.RR) *RRSet 
 func NewRRSetFromRR(rr dns.RR) *RRSet {
 	return &RRSet{
 		name:   dns.CanonicalName(rr.Header().Name),
+		ttl:    rr.Header().Ttl,
 		rrtype: rr.Header().Rrtype,
 		class:  dns.Class(rr.Header().Class),
 		rrs:    []dns.RR{rr},
@@ -42,6 +46,17 @@ func NewRRSetFromRR(rr dns.RR) *RRSet {
 
 func (r *RRSet) GetName() string {
 	return r.name
+}
+
+func (r *RRSet) GetTTL() uint32 {
+	return r.ttl
+}
+
+func (r *RRSet) SetTTL(ttl uint32) {
+	for _, rr := range r.rrs {
+		rr.Header().Ttl = ttl
+	}
+	r.ttl = ttl
 }
 
 // return rtype
@@ -65,6 +80,9 @@ func (r *RRSet) AddRR(rr dns.RR) error {
 	}
 	if rr.Header().Rrtype != r.rrtype {
 		return ErrRRType
+	}
+	if rr.Header().Ttl != r.ttl {
+		return ErrTTL
 	}
 	if rr.Header().Class != uint16(r.class) {
 		fmt.Printf("%d %d\n", rr.Header().Class, r.class)

@@ -36,7 +36,7 @@ func (z *Zone) Read(r io.Reader) error {
 		if !ok || nn == nil {
 			nn = NewNameNode(rr.Header().Name, z.GetClass())
 		}
-		set := GetRRSetOrCreate(nn, rr.Header().Rrtype)
+		set := GetRRSetOrCreate(nn, rr.Header().Rrtype, rr.Header().Ttl)
 		if err := set.AddRR(rr); err != nil {
 			return fmt.Errorf("failed to add RR %v: %w", set, err)
 		}

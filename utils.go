@@ -2,6 +2,7 @@ package dnsutils
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/miekg/dns"
@@ -51,10 +52,10 @@ func IsEmptyRRSet(set RRSetInterface) bool {
 	return set.Len() == 0
 }
 
-func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16) RRSetInterface {
+func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32) RRSetInterface {
 	set := n.GetRRSet(rrtype)
 	if set == nil {
-		return NewRRSet(n.GetName(), rrtype, n.GetClass(), nil)
+		return NewRRSet(n.GetName(), ttl, n.GetClass(), rrtype, nil)
 	}
 	return set
 }
@@ -62,4 +63,8 @@ func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16) RRSetInterface {
 func GetRDATA(rr dns.RR) string {
 	v := strings.SplitN(rr.String(), "\t", 5)
 	return v[5]
+}
+
+func MakeRR(r RRSetInterface, rdata string) (dns.RR, error) {
+	return dns.NewRR(r.GetName() + "\t" + strconv.FormatInt(int64(r.GetTTL()), 10) + "\t" + dns.ClassToString[uint16(r.GetClass())] + "\t" + dns.TypeToString[r.GetRRtype()] + "\t" + rdata)
 }

@@ -205,7 +205,7 @@ func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int
 			nn, ok := tempNode.GetNameNode(rr.Header().Name)
 			if !ok {
 				nn = dnsutils.NewNameNode(rr.Header().Name, z.GetClass())
-				set := dnsutils.NewRRSet(rr.Header().Name, rr.Header().Rrtype, z.GetClass(), nil)
+				set := dnsutils.NewRRSet(rr.Header().Name, rr.Header().Ttl, z.GetClass(), rr.Header().Rrtype, nil)
 				if err := nn.SetRRSet(set); err != nil {
 					return dns.RcodeServerFailure
 				}
@@ -213,7 +213,7 @@ func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int
 					return dns.RcodeServerFailure
 				}
 			}
-			set := dnsutils.GetRRSetOrCreate(nn, rr.Header().Rrtype)
+			set := dnsutils.GetRRSetOrCreate(nn, rr.Header().Rrtype, rr.Header().Ttl)
 			if err := set.AddRR(rr); err != nil {
 				return dns.RcodeServerFailure
 			}
