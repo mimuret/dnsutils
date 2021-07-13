@@ -62,7 +62,10 @@ func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32) RRSetInter
 
 func GetRDATA(rr dns.RR) string {
 	v := strings.SplitN(rr.String(), "\t", 5)
-	return v[5]
+	if len(v) != 5 {
+		return "<nil>"
+	}
+	return v[4]
 }
 
 func MakeRR(r RRSetInterface, rdata string) (dns.RR, error) {
