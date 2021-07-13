@@ -35,6 +35,9 @@ func NewRRSet(name string, ttl uint32, class dns.Class, rrtype uint16, rrs []dns
 	}
 }
 func NewRRSetFromRR(rr dns.RR) *RRSet {
+	if rr == nil {
+		return nil
+	}
 	return &RRSet{
 		name:   dns.CanonicalName(rr.Header().Name),
 		ttl:    rr.Header().Ttl,
@@ -42,6 +45,22 @@ func NewRRSetFromRR(rr dns.RR) *RRSet {
 		class:  dns.Class(rr.Header().Class),
 		rrs:    []dns.RR{rr},
 	}
+}
+func NewRRSetFromRRs(rrs []dns.RR) *RRSet {
+	if len(rrs) == 0 {
+		return nil
+	}
+	var set *RRSet
+	for _, rr := range rrs {
+		if set == nil {
+			set = NewRRSetFromRR(rr)
+		} else {
+			if err := set.AddRR(rr); err != nil {
+				return nil
+			}
+		}
+	}
+	return set
 }
 
 func (r *RRSet) GetName() string {
@@ -85,7 +104,6 @@ func (r *RRSet) AddRR(rr dns.RR) error {
 		return ErrTTL
 	}
 	if rr.Header().Class != uint16(r.class) {
-		fmt.Printf("%d %d\n", rr.Header().Class, r.class)
 		return ErrClass
 	}
 	if len(r.rrs) >= 1 {

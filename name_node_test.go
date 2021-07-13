@@ -60,32 +60,32 @@ var _ = Describe("NameNode", func() {
 		})
 	})
 	Context("Test for GetNameNode", func() {
-		It("return current node with true (strict match)", func() {
+		It("returns current node with true (strict match)", func() {
 			nameNode, ok := root.GetNameNode("example.jp")
 			Expect(ok).To(BeTrue())
 			Expect(nameNode).To(Equal(root))
 		})
-		It("return child node with true (strict match)", func() {
+		It("returns child node with true (strict match)", func() {
 			nameNode, ok := root.GetNameNode("www1.example.jp")
 			Expect(ok).To(BeTrue())
 			Expect(nameNode).To(Equal(www1))
 		})
-		It("return grand child node with true (strict match)", func() {
+		It("returns grand child node with true (strict match)", func() {
 			nameNode, ok := root.GetNameNode("blue.www4.example.jp")
 			Expect(ok).To(BeTrue())
 			Expect(nameNode).To(Equal(blue))
 		})
-		It("return nearly node with false (loose match)", func() {
+		It("returns nearly node with false (loose match)", func() {
 			nameNode, ok := root.GetNameNode("apple.www1.example.jp")
 			Expect(ok).To(BeFalse())
 			Expect(nameNode).To(Equal(www1))
 		})
-		It("return grand child node with false (loose match)", func() {
+		It("returns grand child node with false (loose match)", func() {
 			nameNode, ok := root.GetNameNode("apple.blue.www4.example.jp")
 			Expect(ok).To(BeFalse())
 			Expect(nameNode).To(Equal(blue))
 		})
-		It("return nil with false (if name is not node subdomain name and equals to node domain name)", func() {
+		It("returns nil with false (if name is not node subdomain name and equals to node domain name)", func() {
 			nameNode, ok := root.GetNameNode("example2.jp")
 			Expect(ok).To(BeFalse())
 			Expect(nameNode).To(BeNil())
@@ -95,7 +95,7 @@ var _ = Describe("NameNode", func() {
 		})
 	})
 	Context("Test for GetChildNodes", func() {
-		It("return child node", func() {
+		It("returns child node", func() {
 			Expect(root.CopyChildNodes()).To(Equal(map[string]dnsutils.NameNodeInterface{
 				"www1.example.jp.": www1,
 				"www2.example.jp.": www2,
@@ -105,7 +105,7 @@ var _ = Describe("NameNode", func() {
 		})
 	})
 	Context("Test for GetRRSetMap", func() {
-		It("return RRSetInterface", func() {
+		It("returns RRSetInterface", func() {
 			Expect(root.CopyRRSetMap()).To(Equal(map[uint16]dnsutils.RRSetInterface{
 				dns.TypeA:    aRRSet,
 				dns.TypeAAAA: aaaaRRSet,
@@ -263,7 +263,7 @@ var _ = Describe("NameNode", func() {
 		})
 	})
 	Context("Test for RRSetLen", func() {
-		It("return the number of not empty rrset", func() {
+		It("returns the number of not empty rrset", func() {
 			Expect(root.RRSetLen()).To(Equal(2))
 			set := dnsutils.NewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
 			err := root.SetRRSet(set)

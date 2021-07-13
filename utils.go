@@ -45,6 +45,15 @@ func IsEqualsRRSet(a, b RRSetInterface) bool {
 	return true
 }
 
+func IsCompleteEqualsRRSet(a, b RRSetInterface) bool {
+	if IsEqualsRRSet(a, b) {
+		if a.GetTTL() == b.GetTTL() {
+			return true
+		}
+	}
+	return false
+}
+
 func IsEmptyRRSet(set RRSetInterface) bool {
 	if set == nil {
 		return true
@@ -60,10 +69,18 @@ func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32) RRSetInter
 	return set
 }
 
+func GetNameNodeOrCreate(n NameNodeInterface, name string) (NameNodeInterface, error) {
+	nn, ok := n.GetNameNode(name)
+	if !ok {
+		nn = NewNameNode(name, n.GetClass())
+	}
+	return nn, nil
+}
+
 func GetRDATA(rr dns.RR) string {
 	v := strings.SplitN(rr.String(), "\t", 5)
 	if len(v) != 5 {
-		return "<nil>"
+		return ""
 	}
 	return v[4]
 }

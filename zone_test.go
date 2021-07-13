@@ -18,13 +18,13 @@ var testZoneError []byte
 
 var _ = Describe("Zone", func() {
 	Context("Test for GetName", func() {
-		It("return canonical zone name", func() {
+		It("returns canonical zone name", func() {
 			z := dnsutils.NewZone("example.jp", dns.ClassINET)
 			Expect(z.GetName()).To(Equal("example.jp."))
 		})
 	})
 	Context("Test for GetRootNode", func() {
-		It("return root NameNode", func() {
+		It("returns root NameNode", func() {
 			z := dnsutils.NewZone("example.jp", dns.ClassINET)
 			Expect(z.GetRootNode()).NotTo(BeNil())
 			Expect(z.GetRootNode().GetName()).To(Equal("example.jp."))

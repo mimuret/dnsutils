@@ -188,22 +188,18 @@ func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int
 			if _, ok := z.GetRootNode().GetNameNode(rr.Header().Name); !ok {
 				return dns.RcodeNXRrset
 			}
-			nn, ok := tempNode.GetNameNode(rr.Header().Name)
-			if !ok {
-				nn = dnsutils.NewNameNode(rr.Header().Name, z.GetClass())
-				set := dnsutils.NewRRSet(rr.Header().Name, rr.Header().Ttl, z.GetClass(), rr.Header().Rrtype, nil)
-				if err := nn.SetRRSet(set); err != nil {
-					return dns.RcodeServerFailure
-				}
-				if err := tempNode.SetNameNode(nn); err != nil {
-					return dns.RcodeServerFailure
-				}
+			nn, err := dnsutils.GetNameNodeOrCreate(tempNode, rr.Header().Name)
+			if err != nil {
+				return dns.RcodeServerFailure
 			}
 			set := dnsutils.GetRRSetOrCreate(nn, rr.Header().Rrtype, rr.Header().Ttl)
 			if err := set.AddRR(rr); err != nil {
 				return dns.RcodeServerFailure
 			}
 			if err := nn.SetRRSet(set); err != nil {
+				return dns.RcodeServerFailure
+			}
+			if err := tempNode.SetNameNode(nn); err != nil {
 				return dns.RcodeServerFailure
 			}
 		} else {

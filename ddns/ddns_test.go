@@ -136,6 +136,13 @@ var _ = Describe("DDNS", func() {
 			panic(err)
 		}
 	})
+	Context("NewDDNS", func() {
+		When("UpdateInterface is nil", func() {
+			It("returns nil", func() {
+				Expect(ddns.NewDDNS(nil)).To(BeNil())
+			})
+		})
+	})
 	Context("Test for DDNS.CheckZoneSection", func() {
 		It("can not request multiple zone section records", func() {
 			msg.Question = append(msg.Question, dns.Question{Name: "example.jp.", Qtype: dns.TypeSOA, Qclass: dns.ClassINET})
@@ -280,14 +287,14 @@ var _ = Describe("DDNS", func() {
 	})
 	Context("Test for DDNS.UpdatePrescan", func() {
 		When("request rtype is not supported", func() {
-			It("return rcode formerror", func() {
+			It("returns rcode formerror", func() {
 				msg.Insert([]dns.RR{MustNewRR("example.jp. 3600 IN DNSKEY 256 3 8 AwEAAb6AguVDdiFFs84nDYA6sIXMG3E0Y6QJm98IUH60hfoltGvvkFh9 QMWG2wrqYUhUWvWYXW9gXfeWRCgay/FgrnKjcvAErFmv3dPT81E8jEQc Q7uUlpoIxs/8oVGG1jY1qZJINxwWsF0vm3xx6fnGSwelOCKoRuawo4U4 +TWiO9wf")})
 				rc := d.UpdatePrescan(zone, msg)
 				Expect(rc).To(Equal(dns.RcodeNotImplemented))
 			})
 		})
 		When("request name is not zone domain name", func() {
-			It("return rcode NotZone", func() {
+			It("returns rcode NotZone", func() {
 				msg.Ns = []dns.RR{MustNewRR("example2.jp. 0 IN A 172.16.0.1")}
 				rc := d.UpdatePrescan(zone, msg)
 				Expect(rc).To(Equal(dns.RcodeNotZone))
@@ -298,7 +305,7 @@ var _ = Describe("DDNS", func() {
 		})
 		When("request is Add To An RRset (rfc2136 2.5.1)", func() {
 			When("request rtype is invalid", func() {
-				It("return rcode formerror", func() {
+				It("returns rcode formerror", func() {
 					msg.Ns = []dns.RR{&dns.ANY{Hdr: dns.RR_Header{Name: "example.jp.", Ttl: 0, Rrtype: dns.TypeAXFR, Class: dns.ClassINET, Rdlength: 0}}}
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeFormatError))
@@ -311,7 +318,7 @@ var _ = Describe("DDNS", func() {
 				})
 			})
 			When("request is normal query", func() {
-				It("return rcode NoError", func() {
+				It("returns rcode NoError", func() {
 					msg.Ns = []dns.RR{MustNewRR("example.jp. 3600 IN A 192.168.0.1")}
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeSuccess))
@@ -320,22 +327,29 @@ var _ = Describe("DDNS", func() {
 		})
 		When("request is Delete An RRset (rfc2136 2.5.2)", func() {
 			When("request ttl is not zero", func() {
-				It("return rcode formerror", func() {
+				It("returns rcode formerror", func() {
 					msg.Ns = []dns.RR{&dns.ANY{Hdr: dns.RR_Header{Name: "example.jp.", Ttl: 30, Rrtype: dns.TypeANY, Class: dns.ClassANY, Rdlength: 0}}}
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeFormatError))
 				})
 			})
 			When("request Rdlength is not zero", func() {
-				It("return rcode formerror", func() {
+				It("returns rcode formerror", func() {
 					msg.Ns = []dns.RR{&dns.ANY{Hdr: dns.RR_Header{Name: "example.jp.", Ttl: 0, Rrtype: dns.TypeANY, Class: dns.ClassANY, Rdlength: 1}}}
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeFormatError))
 				})
 			})
-			When("request is normal query", func() {
-				It("return rcode NoError", func() {
+			When("request is normal query zone apex", func() {
+				It("returns rcode NoError", func() {
 					msg.RemoveName([]dns.RR{MustNewRR("example.jp. 3600 IN A 192.168.0.1")})
+					rc := d.UpdatePrescan(zone, msg)
+					Expect(rc).To(Equal(dns.RcodeSuccess))
+				})
+			})
+			When("request is normal query", func() {
+				It("returns rcode NoError", func() {
+					msg.RemoveName([]dns.RR{MustNewRR("mail.example.jp 3600 IN A 192.168.0.1")})
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeSuccess))
 				})
@@ -343,7 +357,7 @@ var _ = Describe("DDNS", func() {
 		})
 		When("request is Delete All RRsets From A Name (rfc2136 2.5.3)", func() {
 			When("request rtype is invalid", func() {
-				It("return rcode formerror", func() {
+				It("returns rcode formerror", func() {
 					msg.Ns = []dns.RR{&dns.ANY{Hdr: dns.RR_Header{Name: "example.jp.", Ttl: 0, Rrtype: dns.TypeAXFR, Class: dns.ClassANY, Rdlength: 0}}}
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeFormatError))
@@ -356,14 +370,14 @@ var _ = Describe("DDNS", func() {
 				})
 			})
 			When("request Rdlength is not zero", func() {
-				It("return rcode formerror", func() {
+				It("returns rcode formerror", func() {
 					msg.Ns = []dns.RR{&dns.ANY{Hdr: dns.RR_Header{Name: "example.jp.", Ttl: 0, Rrtype: dns.TypeA, Class: dns.ClassANY, Rdlength: 1}}}
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeFormatError))
 				})
 			})
 			When("request is normal query", func() {
-				It("return rcode NoError", func() {
+				It("returns rcode NoError", func() {
 					msg.RemoveRRset([]dns.RR{MustNewRR("example.jp. 3600 IN A 192.168.0.1")})
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeSuccess))
@@ -372,7 +386,7 @@ var _ = Describe("DDNS", func() {
 		})
 		When("request is Delete An RR From An RRset (rfc2136 2.5.4)", func() {
 			When("request rtype is invalid", func() {
-				It("return rcode formerror", func() {
+				It("returns rcode formerror", func() {
 					msg.Ns = []dns.RR{&dns.ANY{Hdr: dns.RR_Header{Name: "example.jp.", Ttl: 0, Rrtype: dns.TypeAXFR, Class: dns.ClassNONE, Rdlength: 0}}}
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeFormatError))
@@ -385,14 +399,14 @@ var _ = Describe("DDNS", func() {
 				})
 			})
 			When("request ttl is not zero", func() {
-				It("return rcode formerror", func() {
+				It("returns rcode formerror", func() {
 					msg.Ns = []dns.RR{&dns.ANY{Hdr: dns.RR_Header{Name: "example.jp.", Ttl: 30, Rrtype: dns.TypeA, Class: dns.ClassNONE, Rdlength: 0}}}
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeFormatError))
 				})
 			})
 			When("request is normal query", func() {
-				It("return rcode NoError", func() {
+				It("returns rcode NoError", func() {
 					msg.Remove([]dns.RR{MustNewRR("example.jp. 3600 IN A 192.168.0.1")})
 					rc := d.UpdatePrescan(zone, msg)
 					Expect(rc).To(Equal(dns.RcodeSuccess))
