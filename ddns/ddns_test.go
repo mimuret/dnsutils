@@ -24,7 +24,6 @@ func MustNewRR(s string) dns.RR {
 //go:embed tests/example.jp
 var zonefile []byte
 
-var _ ddns.GetZoneInterface = &TestUpdate{}
 var _ ddns.UpdateInterface = &TestUpdate{}
 
 type TestUpdate struct {
@@ -109,8 +108,8 @@ func (u *TestUpdate) IsUpdateSupportedRtype(rrtype uint16) bool {
 	return false
 }
 
-func (t *TestUpdate) UpdateFailedPostProcess(error)   {}
-func (t *TestUpdate) UpdateSuccessPostProcess() error { return nil }
+func (t *TestUpdate) UpdateFailedPostProcess(error) {}
+func (t *TestUpdate) UpdatePostProcess() error      { return nil }
 
 func TestDDNS(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -131,7 +130,7 @@ var _ = Describe("DDNS", func() {
 		msg.SetUpdate("example.jp")
 		gi = NewTestUpdate()
 		ui = NewTestUpdate()
-		d = ddns.NewDDNS(gi, ui)
+		d = ddns.NewDDNS(ui)
 		zone, err = gi.GetZone(msg)
 		if err != nil {
 			panic(err)

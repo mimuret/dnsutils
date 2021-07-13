@@ -8,14 +8,6 @@ import (
 	"github.com/mimuret/dnsutils"
 )
 
-type GetZoneInterface interface {
-	// get zone data
-	// if not found zname zone, dnsutils.ZoneInterface is nil
-	// if found zname zone, dnsutils.ZoneInterface is not nil
-	// if error happens, dnsutils.ZoneInterface is undefined, error is not nil
-	GetZone(*dns.Msg) (dnsutils.ZoneInterface, error)
-}
-
 type UpdateInterface interface {
 	// add or create RR
 	AddRR(rr dns.RR) error
@@ -35,32 +27,26 @@ type UpdateInterface interface {
 	UpdateFailedPostProcess(error)
 
 	// it can apply zone records when UpdateProcessing is successful
-	UpdateSuccessPostProcess() error
+	UpdatePostProcess() error
 
 	IsPrecheckSupportedRtype(uint16) bool
 	IsUpdateSupportedRtype(uint16) bool
 }
 
-func NewDDNS(gi GetZoneInterface, ui UpdateInterface) *DDNS {
-	if gi == nil || ui == nil {
+func NewDDNS(ui UpdateInterface) *DDNS {
+	if ui == nil {
 		return nil
 	}
 	return &DDNS{
-		gi: gi,
 		ui: ui,
 	}
 }
 
 type DDNS struct {
-	gi GetZoneInterface
 	ui UpdateInterface
 }
 
-func (d *DDNS) ServeUpdate(r *dns.Msg) (int, error) {
-	zone, err := d.gi.GetZone(r)
-	if err != nil {
-		return dns.RcodeServerFailure, nil
-	}
+func (d *DDNS) ServeUpdate(zone dnsutils.ZoneInterface, r *dns.Msg) (int, error) {
 	// zone not found
 	if zone == nil {
 		return dns.RcodeRefused, nil
@@ -79,12 +65,12 @@ func (d *DDNS) ServeUpdate(r *dns.Msg) (int, error) {
 		return rcode, nil
 	}
 
-	err = d.UpdateProcessing(zone, r)
+	err := d.UpdateProcessing(zone, r)
 	if err != nil {
 		d.ui.UpdateFailedPostProcess(err)
 		return dns.RcodeServerFailure, nil
 	}
-	if err := d.ui.UpdateSuccessPostProcess(); err != nil {
+	if err := d.ui.UpdatePostProcess(); err != nil {
 		return dns.RcodeServerFailure, nil
 	}
 
