@@ -7,19 +7,12 @@ import (
 
 	"github.com/mimuret/dnsutils"
 	"github.com/mimuret/dnsutils/ddns"
+	. "github.com/mimuret/dnsutils/testtool"
 
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
-
-func MustNewRR(s string) dns.RR {
-	rr, err := dns.NewRR(s)
-	if err != nil {
-		panic(err)
-	}
-	return rr
-}
 
 //go:embed tests/example.jp
 var zonefile []byte
