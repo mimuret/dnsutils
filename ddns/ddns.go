@@ -202,7 +202,6 @@ func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int
 	}
 
 	var rcode = dns.RcodeSuccess
-
 	tempNode.IterateNameNode(func(node dnsutils.NameNodeInterface) error {
 		zNode, ok := z.GetRootNode().GetNameNode(node.GetName())
 		if !ok {
@@ -348,7 +347,7 @@ func (d *DDNS) UpdateProcessing(z dnsutils.ZoneInterface, m *dns.Msg) error {
 			}
 		}
 		if rr.Header().Class == dns.ClassNONE {
-			if err := d.UpdateRemoveRDARA(z, rr); err != nil {
+			if err := d.UpdateRemoveRDATA(z, rr); err != nil {
 				return err
 			}
 		}
@@ -409,7 +408,7 @@ func (d *DDNS) UpdateAdd(z dnsutils.ZoneInterface, rr dns.RR) error {
 			if dnsutils.IsEmptyRRSet(set) {
 				return nil
 			}
-			zsoa, ok := set.GetRRs()[0].(*dns.SOA)
+			soa, ok := set.GetRRs()[0].(*dns.SOA)
 			if !ok {
 				return nil
 			}
@@ -417,7 +416,7 @@ func (d *DDNS) UpdateAdd(z dnsutils.ZoneInterface, rr dns.RR) error {
 			if !ok {
 				return nil
 			}
-			if zsoa.Serial > srr.Serial {
+			if soa.Serial > srr.Serial {
 				return nil
 			}
 		}
@@ -475,7 +474,7 @@ func (d *DDNS) UpdateRemoveRR(z dnsutils.ZoneInterface, rr dns.RR) error {
 	return nil
 }
 
-func (d *DDNS) UpdateRemoveRDARA(z dnsutils.ZoneInterface, rr dns.RR) error {
+func (d *DDNS) UpdateRemoveRDATA(z dnsutils.ZoneInterface, rr dns.RR) error {
 	if rr.Header().Rrtype == dns.TypeSOA {
 		return nil
 	}
