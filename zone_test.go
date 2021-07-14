@@ -6,6 +6,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/mimuret/dnsutils"
+	. "github.com/mimuret/dnsutils/testtool"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

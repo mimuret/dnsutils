@@ -3,6 +3,7 @@ package dnsutils_test
 import (
 	"net"
 
+	. "github.com/mimuret/dnsutils/testtool"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
