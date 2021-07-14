@@ -29,16 +29,19 @@ func IsEqualsRRSet(a, b RRSetInterface) bool {
 	if a.Len() != b.Len() {
 		return false
 	}
-	arr := a.GetRRs()
-	brr := b.GetRRs()
-	sort.Slice(arr, func(i, j int) bool {
-		return strings.Compare(arr[i].String(), arr[j].String()) > 0
-	})
-	sort.Slice(brr, func(i, j int) bool {
-		return strings.Compare(brr[i].String(), brr[j].String()) > 0
-	})
+	var arr, brr sort.StringSlice
+	for _, rr := range a.GetRRs() {
+		v := strings.SplitN(rr.String(), "\t", 5)
+		arr = append(arr, v[4])
+	}
+	for _, rr := range b.GetRRs() {
+		v := strings.SplitN(rr.String(), "\t", 5)
+		brr = append(brr, v[4])
+	}
+	arr.Sort()
+	brr.Sort()
 	for i := range arr {
-		if arr[i].String() != brr[i].String() {
+		if arr[i] != brr[i] {
 			return false
 		}
 	}
@@ -69,12 +72,12 @@ func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32) RRSetInter
 	return set
 }
 
-func GetNameNodeOrCreate(n NameNodeInterface, name string) (NameNodeInterface, error) {
+func GetNameNodeOrCreate(n NameNodeInterface, name string) NameNodeInterface {
 	nn, ok := n.GetNameNode(name)
 	if !ok {
 		nn = NewNameNode(name, n.GetClass())
 	}
-	return nn, nil
+	return nn
 }
 
 func GetRDATA(rr dns.RR) string {

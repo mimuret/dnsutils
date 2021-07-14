@@ -51,7 +51,7 @@ type NameNodeInterface interface {
 	// if exist same node, override child and rrsetMpa
 	SetNameNode(NameNodeInterface) error
 
-	// override child and rrsetMpa
+	// override child and rrsetMap
 	SetValue(NameNodeInterface) error
 
 	// childRemoved used by RemoveNameNode for ENT removed.

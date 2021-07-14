@@ -9,10 +9,11 @@ import (
 	"github.com/miekg/dns"
 )
 
-var ErrNotDirectlyName = fmt.Errorf("Add label count must be equals to parent label count +1")
+var ErrNotDirectlyName = fmt.Errorf("add label count must be equals to parent label count +1")
 var ErrNotSubdomain = fmt.Errorf("name is not subdomain")
 var ErrChildExist = fmt.Errorf("child name is exist")
 var ErrNameNotEqual = fmt.Errorf("name not equals")
+var ErrClassNotEqual = fmt.Errorf("class not equals")
 var ErrConflictCNAME = fmt.Errorf("name node can't set both CNAME and other")
 var ErrConflictDNAME = fmt.Errorf("name node can't set both DNAME and other")
 var _ NameNodeInterface = &NameNode{}
@@ -97,8 +98,11 @@ func (n *NameNode) GetRRSet(rrtype uint16) RRSetInterface {
 }
 
 func (n *NameNode) SetValue(nn NameNodeInterface) error {
-	if n.name != nn.GetName() {
+	if n.GetName() != nn.GetName() {
 		return ErrNameNotEqual
+	}
+	if n.GetClass() != nn.GetClass() {
+		return ErrClassNotEqual
 	}
 	n.Lock()
 	defer n.Unlock()
@@ -134,11 +138,11 @@ func (n *NameNode) AddChildNode(nn NameNodeInterface) error {
 	if len(parentLabels)+1 != len(childLabels) {
 		return ErrNotDirectlyName
 	}
+	n.Lock()
+	defer n.Unlock()
 	if _, ok := n.children()[nn.GetName()]; ok {
 		return ErrChildExist
 	}
-	n.Lock()
-	defer n.Unlock()
 	cMap := n.children()
 	cMap[nn.GetName()] = nn
 	n.childrenValue.Store(cMap)
