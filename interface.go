@@ -22,6 +22,7 @@ type ZoneInterface interface {
 type NameNodeInterface interface {
 	// return canonical name
 	GetName() string
+	// retrn dns class
 	GetClass() dns.Class
 
 	// isStrict=true, NameNode is target name
@@ -78,12 +79,17 @@ type RRSetInterface interface {
 
 	// return rtype
 	GetTTL() uint32
+	// set ttl
 	SetTTL(uint32)
 
 	// return rr slice
 	GetRRs() []dns.RR
 	// number of rdata
 	Len() int
+
+	// Add RR
+	// return err When any of name, ttl, class and type not equal.
+	// return err When rtype is SOA or CNAME, and it number is multiple.
 	AddRR(dns.RR) error
 	RemoveRR(dns.RR) error
 

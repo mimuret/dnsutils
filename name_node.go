@@ -26,6 +26,7 @@ type NameNode struct {
 	childrenValue atomic.Value
 }
 
+// create NameNode
 func NewNameNode(name string, class dns.Class) *NameNode {
 	name = dns.CanonicalName(name)
 	nnn := &NameNode{
@@ -47,14 +48,20 @@ func (n *NameNode) children() map[string]NameNodeInterface {
 	return m1
 }
 
+// return canonical name
 func (n *NameNode) GetName() string {
 	return n.name
 }
 
+// return ttl
 func (n *NameNode) GetClass() dns.Class {
 	return n.class
 }
 
+// search NameNode
+// if bool is true, NameNode is target name NameNode. (strict match)
+// if bool is false, NameNode is nearly parrent path node. (loose match)
+// if bool is false and NameNode is nil,name not is subdomain and NameNode name.
 func (n *NameNode) GetNameNode(name string) (NameNodeInterface, bool) {
 	name = dns.CanonicalName(name)
 	if !dns.IsSubDomain(n.GetName(), name) {
@@ -71,6 +78,7 @@ func (n *NameNode) GetNameNode(name string) (NameNodeInterface, bool) {
 	return n, false
 }
 
+// returns childNode Map
 func (n *NameNode) CopyChildNodes() map[string]NameNodeInterface {
 	childMap := map[string]NameNodeInterface{}
 	for name, child := range n.children() {
@@ -79,6 +87,7 @@ func (n *NameNode) CopyChildNodes() map[string]NameNodeInterface {
 	return childMap
 }
 
+// returns rrset map
 func (n *NameNode) CopyRRSetMap() map[uint16]RRSetInterface {
 	rrsetMap := map[uint16]RRSetInterface{}
 	for rrtype, set := range n.rrsetMap() {
@@ -89,6 +98,7 @@ func (n *NameNode) CopyRRSetMap() map[uint16]RRSetInterface {
 	return rrsetMap
 }
 
+// returns rrset
 func (n *NameNode) GetRRSet(rrtype uint16) RRSetInterface {
 	set := n.rrsetMap()[rrtype]
 	if set == nil {
@@ -97,6 +107,7 @@ func (n *NameNode) GetRRSet(rrtype uint16) RRSetInterface {
 	return set.Copy()
 }
 
+// override RRSet and Child Nodes
 func (n *NameNode) SetValue(nn NameNodeInterface) error {
 	if n.GetName() != nn.GetName() {
 		return ErrNameNotEqual
@@ -168,7 +179,6 @@ func (n *NameNode) SetNameNode(nn NameNodeInterface) error {
 	return nil
 }
 
-//
 func (n *NameNode) RemoveNameNode(name string) (bool, error) {
 	name = dns.CanonicalName(name)
 	if !dns.IsSubDomain(n.GetName(), name) {
