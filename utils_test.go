@@ -2,25 +2,18 @@ package dnsutils_test
 
 import (
 	"github.com/miekg/dns"
-
 	"github.com/mimuret/dnsutils"
+	. "github.com/mimuret/dnsutils/testtool"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
-
-func MustNewRR(s string) dns.RR {
-	rr, err := dns.NewRR(s)
-	if err != nil {
-		panic(err)
-	}
-	return rr
-}
 
 var _ = Describe("utils", func() {
 	var (
 		soa = MustNewRR("example.jp. 300 IN SOA localhost. root.localhost. 1 3600 600 86400 900")
 		a1  = MustNewRR("example.jp. 300 IN A 192.168.0.1")
 		a2  = MustNewRR("example.jp. 300 IN A 192.168.0.2")
+		www = MustNewRR("www.example.jp. 300 IN A 192.168.0.1")
 	)
 	Context("Test for Equals", func() {
 		It("can compare between non-normalized name", func() {
@@ -181,6 +174,25 @@ var _ = Describe("utils", func() {
 				a4set := dnsutils.GetRRSetOrCreate(root, dns.TypeAAAA, 300)
 				Expect(a4set.GetRRtype()).To(Equal(dns.TypeAAAA))
 				Expect(a4set.GetName()).To(Equal("example.jp."))
+			})
+		})
+	})
+	Context("GetNodeOrCreate", func() {
+		When("exist node", func() {
+			It("returns existing node", func() {
+				set := dnsutils.NewRRSetFromRR(www)
+				root := dnsutils.NewNameNode("example.jp.", dns.ClassINET)
+				wwwNode := dnsutils.NewNameNode("www.example.jp.", dns.ClassINET)
+				wwwNode.SetRRSet(set)
+				root.SetNameNode(wwwNode)
+				Expect(dnsutils.GetNameNodeOrCreate(root, "www.example.jp")).To(Equal(wwwNode))
+			})
+		})
+		When("not exist node", func() {
+			It("returns new node", func() {
+				root := dnsutils.NewNameNode("example.jp.", dns.ClassINET)
+				wwwNode := dnsutils.GetNameNodeOrCreate(root, "www.example.jp")
+				Expect(wwwNode.GetName()).To(Equal("www.example.jp."))
 			})
 		})
 	})

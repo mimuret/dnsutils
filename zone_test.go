@@ -6,6 +6,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/mimuret/dnsutils"
+	. "github.com/mimuret/dnsutils/testtool"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,6 +16,9 @@ var testZoneNormal []byte
 
 //go:embed testdata/example.jp.error
 var testZoneError []byte
+
+//go:embed testdata/example.jp.parse
+var testZoneParseError []byte
 
 var _ = Describe("Zone", func() {
 	Context("Test for GetName", func() {
@@ -49,6 +53,12 @@ var _ = Describe("Zone", func() {
 		})
 		It("can't read not valid data", func() {
 			testZoneErrorBuf := bytes.NewBuffer(testZoneError)
+			z := dnsutils.NewZone("example.jp", dns.ClassINET)
+			err := z.Read(testZoneErrorBuf)
+			Expect(err).NotTo(BeNil())
+		})
+		It("can't parse record", func() {
+			testZoneErrorBuf := bytes.NewBuffer(testZoneParseError)
 			z := dnsutils.NewZone("example.jp", dns.ClassINET)
 			err := z.Read(testZoneErrorBuf)
 			Expect(err).NotTo(BeNil())

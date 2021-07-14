@@ -1,10 +1,13 @@
 package dnsutils_test
 
 import (
+	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/miekg/dns"
 	"github.com/mimuret/dnsutils"
+	. "github.com/mimuret/dnsutils/testtool"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -94,7 +97,7 @@ var _ = Describe("NameNode", func() {
 			Expect(nameNode).To(BeNil())
 		})
 	})
-	Context("Test for GetChildNodes", func() {
+	Context("Test for CopyChildNodes", func() {
 		It("returns child node", func() {
 			Expect(root.CopyChildNodes()).To(Equal(map[string]dnsutils.NameNodeInterface{
 				"www1.example.jp.": www1,
@@ -104,12 +107,46 @@ var _ = Describe("NameNode", func() {
 			}))
 		})
 	})
-	Context("Test for GetRRSetMap", func() {
+	Context("Test for CopyRRSetMap", func() {
 		It("returns RRSetInterface", func() {
 			Expect(root.CopyRRSetMap()).To(Equal(map[uint16]dnsutils.RRSetInterface{
 				dns.TypeA:    aRRSet,
 				dns.TypeAAAA: aaaaRRSet,
 			}))
+		})
+	})
+	Context("Test for GetRRSet", func() {
+		It("returns RRSetInterface if exist", func() {
+			Expect(root.GetRRSet(dns.TypeA)).To(Equal(aRRSet))
+		})
+		It("returns nil if not exist", func() {
+			Expect(root.GetRRSet(dns.TypeCNAME)).To(BeNil())
+		})
+	})
+	Context("Test for SetValue", func() {
+		When("name not equals", func() {
+			It("returns ErrNameNotEqual", func() {
+				a := dnsutils.NewNameNode("example.net.", dns.ClassINET)
+				b := dnsutils.NewNameNode("www.example.net.", dns.ClassINET)
+				Expect(a.SetValue(b)).To(Equal(dnsutils.ErrNameNotEqual))
+			})
+		})
+		When("name not class", func() {
+			It("returns ErrNameNotEqual", func() {
+				a := dnsutils.NewNameNode("example.net.", dns.ClassINET)
+				b := dnsutils.NewNameNode("example.net.", dns.ClassCHAOS)
+				Expect(a.SetValue(b)).To(Equal(dnsutils.ErrClassNotEqual))
+			})
+		})
+		When("name not class", func() {
+			It("returns nil", func() {
+				a := dnsutils.NewNameNode("example.net.", dns.ClassINET)
+				b := dnsutils.NewNameNode("example.net.", dns.ClassINET)
+				brr := MustNewRR("example.net. 300 IN A 192.169.0.0")
+				b.SetRRSet(dnsutils.NewRRSetFromRR(brr))
+				Expect(a.SetValue(b)).To(BeNil())
+				Expect(a.GetRRSet(dns.TypeA).GetRRs()).To(Equal([]dns.RR{brr}))
+			})
 		})
 	})
 	Context("Test for IterateNameRRSet", func() {
@@ -124,6 +161,39 @@ var _ = Describe("NameNode", func() {
 				dns.TypeAAAA: aaaaRRSet,
 			}))
 		})
+		It("can return err", func() {
+			err := root.IterateNameRRSet(func(set dnsutils.RRSetInterface) error {
+				return fmt.Errorf("error")
+			})
+			Expect(err).NotTo(BeNil())
+		})
+	})
+	Context("Test for IterateNameNode", func() {
+		It("can iterate all node", func() {
+			names := sort.StringSlice{}
+			target := sort.StringSlice{"example.jp.", "www1.example.jp.", "www2.example.jp.", "www3.example.jp.", "www4.example.jp.", "blue.www4.example.jp.", "alpha.blue.www4.example.jp.", "beta.alpha.blue.www4.example.jp."}
+			root.IterateNameNode(func(n dnsutils.NameNodeInterface) error {
+				names = append(names, n.GetName())
+				return nil
+			})
+			names.Sort()
+			target.Sort()
+			Expect(names).To(Equal(target))
+		})
+		It("can return err", func() {
+			err := root.IterateNameNode(func(n dnsutils.NameNodeInterface) error {
+				return fmt.Errorf("error")
+			})
+			Expect(err).NotTo(BeNil())
+			err = root.IterateNameNode(func(n dnsutils.NameNodeInterface) error {
+				if n.GetName() != "example.jp." {
+					return fmt.Errorf("error")
+				}
+				return nil
+			})
+			Expect(err).NotTo(BeNil())
+		})
+
 	})
 	Context("Test AddChildNode", func() {
 		It("can set directly child node", func() {
@@ -145,6 +215,11 @@ var _ = Describe("NameNode", func() {
 		})
 	})
 	Context("Test SetNameNode", func() {
+		It("can not set name that is not subdomain", func() {
+			example2 := dnsutils.NewNameNode("example2.jp", dns.ClassINET)
+			err := root.SetNameNode(example2)
+			Expect(err).NotTo(BeNil())
+		})
 		It("can set directly child node", func() {
 			www5 := dnsutils.NewNameNode("www5.example.jp", dns.ClassINET)
 			err := root.SetNameNode(www5)
@@ -251,15 +326,16 @@ var _ = Describe("NameNode", func() {
 	})
 	Context("Test for RemoveRRSet", func() {
 		It("can removeset rrset", func() {
-			set := dnsutils.NewRRSet("example2.jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
-			err := root.SetRRSet(set)
-			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
-			err = root.SetRRSet(set)
-			Expect(err).NotTo(BeNil())
-			set = dnsutils.NewRRSet("www.example.jp.", 300, dns.ClassINET, dns.TypeTXT, nil)
-			err = root.SetRRSet(set)
-			Expect(err).NotTo(BeNil())
+			r1 := MustNewRR("www1.example.net. 30 IN A 192.168.0.1")
+			set := dnsutils.NewRRSetFromRRs([]dns.RR{r1})
+			node := dnsutils.NewNameNode("www1.example.net.", dns.ClassINET)
+			err := node.SetRRSet(set)
+			Expect(err).To(BeNil())
+			Expect(node.GetRRSet(dns.TypeA)).To(Equal(set))
+			node.RemoveRRSet(dns.TypeAAAA)
+			Expect(node.GetRRSet(dns.TypeA)).To(Equal(set))
+			node.RemoveRRSet(dns.TypeA)
+			Expect(node.GetRRSet(dns.TypeA)).To(BeNil())
 		})
 	})
 	Context("Test for RRSetLen", func() {

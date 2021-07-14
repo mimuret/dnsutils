@@ -15,6 +15,7 @@ type Zone struct {
 	class dns.Class
 }
 
+// create Zone. Not return nil
 func NewZone(name string, class dns.Class) *Zone {
 	name = dns.CanonicalName(name)
 	return &Zone{
@@ -24,11 +25,16 @@ func NewZone(name string, class dns.Class) *Zone {
 	}
 }
 
+// return dns.Class
 func (z *Zone) GetClass() dns.Class { return z.class }
-func (z *Zone) GetName() string     { return z.name }
 
+// return canonical zone name
+func (z *Zone) GetName() string { return z.name }
+
+// return zone apex NameNode
 func (z *Zone) GetRootNode() NameNodeInterface { return z.root }
 
+// read zonefile format data
 func (z *Zone) Read(r io.Reader) error {
 	zp := dns.NewZoneParser(r, z.GetName(), "")
 	for rr, ok := zp.Next(); ok; rr, ok = zp.Next() {

@@ -1,9 +1,6 @@
 package ddns
 
 import (
-	"sort"
-	"strings"
-
 	"github.com/miekg/dns"
 	"github.com/mimuret/dnsutils"
 )
@@ -68,10 +65,10 @@ func (d *DDNS) ServeUpdate(zone dnsutils.ZoneInterface, r *dns.Msg) (int, error)
 	err := d.UpdateProcessing(zone, r)
 	if err != nil {
 		d.ui.UpdateFailedPostProcess(err)
-		return dns.RcodeServerFailure, nil
+		return dns.RcodeServerFailure, err
 	}
 	if err := d.ui.UpdatePostProcess(); err != nil {
-		return dns.RcodeServerFailure, nil
+		return dns.RcodeServerFailure, err
 	}
 
 	return dns.RcodeSuccess, nil
@@ -188,13 +185,10 @@ func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int
 			if _, ok := z.GetRootNode().GetNameNode(rr.Header().Name); !ok {
 				return dns.RcodeNXRrset
 			}
-			nn, err := dnsutils.GetNameNodeOrCreate(tempNode, rr.Header().Name)
-			if err != nil {
-				return dns.RcodeServerFailure
-			}
+			nn := dnsutils.GetNameNodeOrCreate(tempNode, rr.Header().Name)
 			set := dnsutils.GetRRSetOrCreate(nn, rr.Header().Rrtype, rr.Header().Ttl)
 			if err := set.AddRR(rr); err != nil {
-				return dns.RcodeServerFailure
+				return dns.RcodeFormatError
 			}
 			if err := nn.SetRRSet(set); err != nil {
 				return dns.RcodeServerFailure
@@ -220,7 +214,7 @@ func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int
 				rcode = dns.RcodeNXRrset
 				return nil
 			}
-			if !IsEqualsRRSetRdata(zset, set) {
+			if !dnsutils.IsEqualsRRSet(zset, set) {
 				rcode = dns.RcodeNXRrset
 				return nil
 			}
@@ -353,7 +347,7 @@ func (d *DDNS) UpdateProcessing(z dnsutils.ZoneInterface, m *dns.Msg) error {
 			}
 		}
 		if rr.Header().Class == dns.ClassNONE {
-			if err := d.UpdateRemoveRDARA(z, rr); err != nil {
+			if err := d.UpdateRemoveRDATA(z, rr); err != nil {
 				return err
 			}
 		}
@@ -480,7 +474,7 @@ func (d *DDNS) UpdateRemoveRR(z dnsutils.ZoneInterface, rr dns.RR) error {
 	return nil
 }
 
-func (d *DDNS) UpdateRemoveRDARA(z dnsutils.ZoneInterface, rr dns.RR) error {
+func (d *DDNS) UpdateRemoveRDATA(z dnsutils.ZoneInterface, rr dns.RR) error {
 	if rr.Header().Rrtype == dns.TypeSOA {
 		return nil
 	}
@@ -491,36 +485,4 @@ func (d *DDNS) UpdateRemoveRDARA(z dnsutils.ZoneInterface, rr dns.RR) error {
 		return err
 	}
 	return nil
-}
-
-func IsEqualsRRSetRdata(a, b dnsutils.RRSetInterface) bool {
-	if a.GetClass() != b.GetClass() {
-		return false
-	}
-	if a.GetRRtype() != b.GetRRtype() {
-		return false
-	}
-	if a.Len() != b.Len() {
-		return false
-	}
-	if !dnsutils.Equals(a.GetName(), b.GetName()) {
-		return false
-	}
-	var arr, brr sort.StringSlice
-	for _, rr := range a.GetRRs() {
-		v := strings.SplitN(rr.String(), "\t", 5)
-		arr = append(arr, v[4])
-	}
-	for _, rr := range b.GetRRs() {
-		v := strings.SplitN(rr.String(), "\t", 5)
-		brr = append(brr, v[4])
-	}
-	arr.Sort()
-	brr.Sort()
-	for i := range arr {
-		if arr[i] != brr[i] {
-			return false
-		}
-	}
-	return true
 }
