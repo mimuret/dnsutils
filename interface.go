@@ -87,10 +87,12 @@ type RRSetInterface interface {
 	// number of rdata
 	Len() int
 
-	// Add RR
-	// return err When any of name, ttl, class and type not equal.
-	// return err When rtype is SOA or CNAME, and it number is multiple.
+	// Add Resource record
 	AddRR(dns.RR) error
+
+	// Remove Resource record
+	// return err
+	// return err When rtype is SOA or CNAME, and it number is multiple.
 	RemoveRR(dns.RR) error
 
 	Copy() RRSetInterface

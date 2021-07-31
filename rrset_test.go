@@ -1,6 +1,7 @@
 package dnsutils_test
 
 import (
+	"encoding/json"
 	"net"
 
 	. "github.com/mimuret/dnsutils/testtool"
@@ -141,13 +142,13 @@ var _ = Describe("RRSet", func() {
 			It("can be add uniq RR", func() {
 				rrset := dnsutils.NewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, nil)
 				err := rrset.AddRR(a11)
-				Expect(err).To(BeNil())
+				Expect(err).To(Succeed())
 				Expect(rrset.GetRRs()).To(Equal([]dns.RR{a11}))
 				err = rrset.AddRR(a11)
-				Expect(err).To(BeNil())
+				Expect(err).To(Succeed())
 				Expect(rrset.GetRRs()).To(Equal([]dns.RR{a11}))
 				err = rrset.AddRR(a12)
-				Expect(err).To(BeNil())
+				Expect(err).To(Succeed())
 				Expect(rrset.GetRRs()).To(Equal([]dns.RR{a11, a12}))
 			})
 		})
@@ -157,7 +158,7 @@ var _ = Describe("RRSet", func() {
 				Expect(rrset.GetRRs()).To(Equal([]dns.RR{soa1}))
 
 				err := rrset.AddRR(soa2)
-				Expect(err).NotTo(BeNil())
+				Expect(err).To(HaveOccurred())
 				Expect(rrset.GetRRs()).To(Equal([]dns.RR{soa1}))
 			})
 		})
@@ -168,7 +169,7 @@ var _ = Describe("RRSet", func() {
 				Expect(rrset.GetRRs()).To(Equal([]dns.RR{cname1}))
 
 				err := rrset.AddRR(cname2)
-				Expect(err).NotTo(BeNil())
+				Expect(err).To(HaveOccurred())
 				Expect(rrset.GetRRs()).To(Equal([]dns.RR{cname1}))
 			})
 		})
@@ -184,6 +185,107 @@ var _ = Describe("RRSet", func() {
 			Expect(rrset.GetRRs()).To(Equal([]dns.RR{a12}))
 			rrset.RemoveRR(a12)
 			Expect(rrset.GetRRs()).To(Equal([]dns.RR{}))
+		})
+	})
+	Context("test for UnmarshalJSON", func() {
+		var (
+			err error
+			set *dnsutils.RRSet
+		)
+		BeforeEach(func() {
+			set = &dnsutils.RRSet{}
+		})
+		When("valid data", func() {
+			BeforeEach(func() {
+				jsonStr := []byte(`{"name": "example.jp", "class": "IN", "ttl": 300, "rrtype":"A","rdata": ["192.168.0.1","192.168.0.2"]}`)
+				err = json.Unmarshal(jsonStr, set)
+			})
+			It("can parse json", func() {
+				eset := dnsutils.NewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{
+					MustNewRR("example.jp. 300 IN A 192.168.0.1"),
+					MustNewRR("example.jp. 300 IN A 192.168.0.2"),
+				})
+				Expect(err).To(Succeed())
+				Expect(set).To(Equal(eset))
+			})
+		})
+		When("invalid json (type invalid)", func() {
+			BeforeEach(func() {
+				jsonStr := []byte(`{"name": 0, "class": "IN", "ttl": 300, "rrtype":"A","rdata": ["2001:db8::1","192.168.0.2"]}`)
+				err = json.Unmarshal(jsonStr, set)
+			})
+			It("return error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(MatchRegexp("failed to parse json format"))
+			})
+		})
+		When("class invalid", func() {
+			BeforeEach(func() {
+				jsonStr := []byte(`{"name": "example.jp", "class": "HOGE", "ttl": 300, "rrtype":"A","rdata": ["2001:db8::1","192.168.0.2"]}`)
+				err = json.Unmarshal(jsonStr, set)
+			})
+			It("return error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(MatchRegexp("invalid class"))
+			})
+		})
+		When("ttl invalid", func() {
+			BeforeEach(func() {
+				jsonStr := []byte(`{"name": "example.jp", "class": "HOGE", "ttl": -1, "rrtype":"A","rdata": ["2001:db8::1","192.168.0.2"]}`)
+				err = json.Unmarshal(jsonStr, set)
+			})
+			It("return error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(MatchRegexp("failed to parse json format"))
+			})
+		})
+		When("not support rrtype", func() {
+			BeforeEach(func() {
+				jsonStr := []byte(`{"name": "example.jp", "class": "IN", "ttl": 300, "rrtype":"HOGE","rdata": ["2001:db8::1","192.168.0.2"]}`)
+				err = json.Unmarshal(jsonStr, set)
+			})
+			It("return error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(MatchRegexp("not support rrtype"))
+			})
+		})
+		When("empty rdata", func() {
+			BeforeEach(func() {
+				jsonStr := []byte(`{"name": "example.jp", "class": "IN", "ttl": 300, "rrtype":"A"}`)
+				err = json.Unmarshal(jsonStr, set)
+			})
+			It("return error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(MatchRegexp("rdata must not be empty"))
+			})
+		})
+		When("invalid rdata", func() {
+			BeforeEach(func() {
+				jsonStr := []byte(`{"name": "example.jp", "class": "IN", "ttl": 300, "rrtype":"A","rdata": ["2001:db8::1","192.168.0.2"]}`)
+				err = json.Unmarshal(jsonStr, set)
+			})
+			It("return error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(MatchRegexp("failed to set Rdata"))
+			})
+		})
+	})
+	Context("test for MarshalJSON", func() {
+		var (
+			err error
+			set *dnsutils.RRSet
+			bs  []byte
+		)
+		BeforeEach(func() {
+			set = dnsutils.NewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{
+				MustNewRR("example.jp. 300 IN A 192.168.0.1"),
+				MustNewRR("example.jp. 300 IN A 192.168.0.2"),
+			})
+			bs, err = json.Marshal(set)
+		})
+		It("returns json string", func() {
+			Expect(err).To(Succeed())
+			Expect(bs).To(MatchJSON([]byte(`{"name": "example.jp.", "class": "IN", "ttl": 300, "rrtype":"A","rdata": ["192.168.0.1","192.168.0.2"]}`)))
 		})
 	})
 })

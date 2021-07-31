@@ -1,0 +1,7 @@
+{
+  "name": "example.jp.",
+  "class": "IN",
+  "rrsets": [
+    {"name": "example.net.", "class": "IN", "ttl": 3600, "rrtype":"SOA","rdata": ["localhost. root.localhost. 1 3600 900 85400 300"]}
+  ]
+}

@@ -135,7 +135,7 @@ func (d *DDNS) CheckZoneSection(z dnsutils.ZoneInterface, msg *dns.Msg) int {
                 return (NXRRSET)
 */
 func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int {
-	tempNode := dnsutils.NewNameNode(z.GetName(), z.GetClass())
+	tempNode, _ := dnsutils.NewNameNode(z.GetName(), z.GetClass())
 	for _, rr := range msg.Answer {
 		if rr.Header().Rrtype != dns.TypeANY {
 			if !d.ui.IsPrecheckSupportedRtype(rr.Header().Rrtype) {
@@ -185,7 +185,7 @@ func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int
 			if _, ok := z.GetRootNode().GetNameNode(rr.Header().Name); !ok {
 				return dns.RcodeNXRrset
 			}
-			nn := dnsutils.GetNameNodeOrCreate(tempNode, rr.Header().Name)
+			nn, _ := dnsutils.GetNameNodeOrCreate(tempNode, rr.Header().Name)
 			set := dnsutils.GetRRSetOrCreate(nn, rr.Header().Rrtype, rr.Header().Ttl)
 			if err := set.AddRR(rr); err != nil {
 				return dns.RcodeFormatError

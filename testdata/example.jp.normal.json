@@ -1,0 +1,16 @@
+{
+  "name": "example.jp.",
+  "class": "IN",
+  "rrsets": [
+    {"name": "example.jp.", "class": "IN", "ttl": 3600, "rrtype":"SOA","rdata": ["localhost. root.localhost. 1 3600 900 85400 300"]},
+    {"name": "example.jp.", "class": "IN", "ttl": 3600, "rrtype":"NS","rdata": ["ns1.example.jp.","ns2.example.jp."]},
+    {"name": "help.example.jp.", "class": "IN", "ttl": 3600, "rrtype":"A","rdata": ["192.168.2.1"]},
+    {"name": "test.hoge.example.jp.", "class": "IN", "ttl": 3600, "rrtype":"A","rdata": ["192.168.2.1","192.168.2.2"]},
+    {"name": "mail.example.jp.", "class": "IN", "ttl": 3600, "rrtype":"A","rdata": ["192.168.1.1","192.168.1.2","192.168.1.3"]},
+    {"name": "ns1.example.jp.", "class": "IN", "ttl": 3600, "rrtype":"A","rdata": ["192.168.0.1"]},
+    {"name": "ns1.example.jp.", "class": "IN", "ttl": 3600, "rrtype":"AAAA","rdata": ["2001:db8::1"]},
+    {"name": "ns2.example.jp.", "class": "IN", "ttl": 3600, "rrtype":"A","rdata": ["192.168.0.2"]},
+    {"name": "ns2.example.jp.", "class": "IN", "ttl": 3600, "rrtype":"AAAA","rdata": ["2001:db8::2"]},
+    {"name": "www.example.jp.", "class": "IN", "ttl": 3600, "rrtype":"CNAME","rdata": ["www.example.net."]}
+  ]
+}

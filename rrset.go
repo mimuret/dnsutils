@@ -1,6 +1,7 @@
 package dnsutils
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/miekg/dns"
@@ -9,11 +10,12 @@ import (
 var _ RRSetInterface = &RRSet{}
 
 var (
-	ErrTTL      = fmt.Errorf("Not equals ttl")
-	ErrRRName   = fmt.Errorf("Not equals rr name")
-	ErrRRType   = fmt.Errorf("Not equals rrtype")
-	ErrClass    = fmt.Errorf("Not equals class")
-	ErrConflict = fmt.Errorf("Conflict RR")
+	ErrTTL      = fmt.Errorf("not equals ttl")
+	ErrRRName   = fmt.Errorf("not equals rr name")
+	ErrRRType   = fmt.Errorf("not equals rrtype")
+	ErrClass    = fmt.Errorf("not equals class")
+	ErrConflict = fmt.Errorf("conflict RR")
+	ErrInvalid  = fmt.Errorf("invalid data")
 )
 
 // RRSet
@@ -165,4 +167,54 @@ func (r *RRSet) Copy() RRSetInterface {
 // return number of rdata
 func (r *RRSet) Len() int {
 	return len(r.rrs)
+}
+
+type jsonRRsetStruct struct {
+	Name   string   `json:"name"`
+	Class  string   `json:"class"`
+	TTL    uint32   `json:"ttl"`
+	RRtype string   `json:"rrtype"`
+	RDATA  []string `json:"rdata"`
+}
+
+func (r *RRSet) UnmarshalJSON(bs []byte) error {
+	var (
+		v = &jsonRRsetStruct{}
+	)
+	if err := json.Unmarshal(bs, v); err != nil {
+		return fmt.Errorf("failed to parse json format: %w", err)
+	}
+	r.name = dns.CanonicalName(v.Name)
+	class, err := ConvertStringToClass(v.Class)
+	if err != nil {
+		return fmt.Errorf("invalid class %s", v.Class)
+	}
+	r.class = class
+	r.ttl = uint32(v.TTL)
+	rrtype, err := ConvertStringToType(v.RRtype)
+	if err != nil {
+		return fmt.Errorf("not support rrtype %s", v.RRtype)
+	}
+	r.rrtype = rrtype
+	if len(v.RDATA) == 0 {
+		return fmt.Errorf("rdata must not be empty")
+	}
+	if err := SetRdata(r, v.RDATA); err != nil {
+		return fmt.Errorf("failed to set Rdata: %w", err)
+	}
+	return nil
+}
+
+func (r *RRSet) MarshalJSON() ([]byte, error) {
+	return MarshalJSONRRset(r)
+}
+
+func MarshalJSONRRset(set RRSetInterface) ([]byte, error) {
+	v := &jsonRRsetStruct{}
+	v.Name = set.GetName()
+	v.Class = ConvertClassToString(set.GetClass())
+	v.TTL = set.GetTTL()
+	v.RRtype = ConvertTypeToString(set.GetRRtype())
+	v.RDATA = GetRDATASlice(set)
+	return json.Marshal(v)
 }

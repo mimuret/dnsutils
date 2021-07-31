@@ -2,6 +2,7 @@ package dnsutils
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -9,13 +10,17 @@ import (
 	"github.com/miekg/dns"
 )
 
-var ErrNotDirectlyName = fmt.Errorf("add label count must be equals to parent label count +1")
-var ErrNotSubdomain = fmt.Errorf("name is not subdomain")
-var ErrChildExist = fmt.Errorf("child name is exist")
-var ErrNameNotEqual = fmt.Errorf("name not equals")
-var ErrClassNotEqual = fmt.Errorf("class not equals")
-var ErrConflictCNAME = fmt.Errorf("name node can't set both CNAME and other")
-var ErrConflictDNAME = fmt.Errorf("name node can't set both DNAME and other")
+var (
+	ErrBadName         = fmt.Errorf("bad name")
+	ErrNotDirectlyName = fmt.Errorf("add label count must be equals to parent label count +1")
+	ErrNotSubdomain    = fmt.Errorf("name is not subdomain")
+	ErrChildExist      = fmt.Errorf("child name is exist")
+	ErrNameNotEqual    = fmt.Errorf("name not equals")
+	ErrClassNotEqual   = fmt.Errorf("class not equals")
+	ErrConflictCNAME   = fmt.Errorf("name node can't set both CNAME and other")
+	ErrConflictDNAME   = fmt.Errorf("name node can't set both DNAME and other")
+)
+
 var _ NameNodeInterface = &NameNode{}
 
 type NameNode struct {
@@ -27,15 +32,18 @@ type NameNode struct {
 }
 
 // create NameNode
-func NewNameNode(name string, class dns.Class) *NameNode {
+func NewNameNode(name string, class dns.Class) (*NameNode, error) {
 	name = dns.CanonicalName(name)
+	if _, ok := dns.IsDomainName(name); !ok {
+		return nil, ErrBadName
+	}
 	nnn := &NameNode{
 		name:  name,
 		class: class,
 	}
 	nnn.rrsetValue.Store(make(map[uint16]RRSetInterface))
 	nnn.childrenValue.Store(make(map[string]NameNodeInterface))
-	return nnn
+	return nnn, nil
 }
 
 func (n *NameNode) rrsetMap() map[uint16]RRSetInterface {
@@ -123,8 +131,22 @@ func (n *NameNode) SetValue(nn NameNodeInterface) error {
 }
 
 func (n *NameNode) IterateNameRRSet(f func(RRSetInterface) error) error {
-	for _, set := range n.rrsetMap() {
-		if err := f(set); err != nil {
+	rrsetMap := n.rrsetMap()
+	keys := []uint16{}
+	for key := range rrsetMap {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i] == dns.TypeSOA {
+			return true
+		}
+		if keys[j] == dns.TypeSOA {
+			return false
+		}
+		return keys[i] < keys[j]
+	})
+	for _, rrtype := range keys {
+		if err := f(rrsetMap[rrtype]); err != nil {
 			return err
 		}
 	}
@@ -135,8 +157,14 @@ func (n *NameNode) IterateNameNode(f func(NameNodeInterface) error) error {
 	if err := f(n); err != nil {
 		return err
 	}
-	for _, nn := range n.children() {
-		if err := nn.IterateNameNode(f); err != nil {
+	rrsetMap := n.children()
+	keys := sort.StringSlice{}
+	for key := range rrsetMap {
+		keys = append(keys, key)
+	}
+	keys.Sort()
+	for _, name := range keys {
+		if err := rrsetMap[name].IterateNameNode(f); err != nil {
 			return err
 		}
 	}
@@ -169,7 +197,7 @@ func (n *NameNode) SetNameNode(nn NameNodeInterface) error {
 		parentLabels := dns.SplitDomainName(searchNode.GetName())
 		childLabels := dns.SplitDomainName(nn.GetName())
 		childName := strings.Join(childLabels[len(childLabels)-len(parentLabels)-1:], ".")
-		childNode := NewNameNode(childName, n.GetClass())
+		childNode, _ := NewNameNode(childName, n.GetClass())
 		if err := searchNode.AddChildNode(childNode); err != nil {
 			return err
 		}
