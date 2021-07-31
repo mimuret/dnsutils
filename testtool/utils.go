@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/miekg/dns"
+	"github.com/mimuret/dnsutils"
 )
 
 // USE ONLY TEST PACKAGE
@@ -14,4 +15,31 @@ func MustNewRR(s string) dns.RR {
 		panic(err)
 	}
 	return rr
+}
+
+func MustNewRRSet(name string, ttl uint32, class dns.Class, rrtype uint16, rrs []dns.RR) *dnsutils.RRSet {
+	set, err := dnsutils.NewRRSet(name, ttl, class, rrtype, rrs)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	return set
+}
+
+func MustNewNameNode(name string, class dns.Class) *dnsutils.NameNode {
+	nn, err := dnsutils.NewNameNode(name, class)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	return nn
+}
+
+func MustNewZone(name string, class dns.Class) *dnsutils.Zone {
+	zone, err := dnsutils.NewZone(name, class)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	return zone
 }

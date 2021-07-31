@@ -5,6 +5,7 @@ import (
 	"github.com/mimuret/dnsutils"
 )
 
+// UpdateInterface is update zone interface
 type UpdateInterface interface {
 	// add or create RR
 	AddRR(rr dns.RR) error
@@ -30,6 +31,8 @@ type UpdateInterface interface {
 	IsUpdateSupportedRtype(uint16) bool
 }
 
+// NewDDNS is create DDNS
+// ui is nil, return nil
 func NewDDNS(ui UpdateInterface) *DDNS {
 	if ui == nil {
 		return nil
@@ -39,10 +42,13 @@ func NewDDNS(ui UpdateInterface) *DDNS {
 	}
 }
 
+// DDNS is dynamic update struct
+// It can process update message and It updates zone data using UpdateInterface.
 type DDNS struct {
 	ui UpdateInterface
 }
 
+// DDNS.ServeUpdate is process update message
 func (d *DDNS) ServeUpdate(zone dnsutils.ZoneInterface, r *dns.Msg) (int, error) {
 	// zone not found
 	if zone == nil {
@@ -85,7 +91,6 @@ func (d *DDNS) ServeUpdate(zone dnsutils.ZoneInterface, r *dns.Msg) (int, error)
            return update()
       return (NOTAUTH)
 */
-
 func (d *DDNS) CheckZoneSection(z dnsutils.ZoneInterface, msg *dns.Msg) int {
 	if len(msg.Question) != 1 {
 		return dns.RcodeFormatError
@@ -186,7 +191,10 @@ func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int
 				return dns.RcodeNXRrset
 			}
 			nn, _ := dnsutils.GetNameNodeOrCreate(tempNode, rr.Header().Name)
-			set := dnsutils.GetRRSetOrCreate(nn, rr.Header().Rrtype, rr.Header().Ttl)
+			set, err := dnsutils.GetRRSetOrCreate(nn, rr.Header().Rrtype, rr.Header().Ttl)
+			if err != nil {
+				return dns.RcodeFormatError
+			}
 			if err := set.AddRR(rr); err != nil {
 				return dns.RcodeFormatError
 			}
@@ -447,6 +455,7 @@ func (d *DDNS) UpdateAdd(z dnsutils.ZoneInterface, rr dns.RR) error {
 	return nil
 }
 
+// process Remove name and rrset
 func (d *DDNS) UpdateRemoveRR(z dnsutils.ZoneInterface, rr dns.RR) error {
 	if rr.Header().Rrtype == dns.TypeANY {
 		// Delete all RRsets from a name
@@ -474,6 +483,7 @@ func (d *DDNS) UpdateRemoveRR(z dnsutils.ZoneInterface, rr dns.RR) error {
 	return nil
 }
 
+// process remove RR
 func (d *DDNS) UpdateRemoveRDATA(z dnsutils.ZoneInterface, rr dns.RR) error {
 	if rr.Header().Rrtype == dns.TypeSOA {
 		return nil

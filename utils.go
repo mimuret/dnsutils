@@ -81,12 +81,12 @@ func IsEmptyRRSet(set RRSetInterface) bool {
 // if exist rrset, returns it.
 // if not exist rrset, It create new rrset and return it.
 // but new rrset is not link to NameNode. Maybe you can use SetRRSet.
-func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32) RRSetInterface {
+func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32) (RRSetInterface, error) {
 	set := n.GetRRSet(rrtype)
 	if set == nil {
 		return NewRRSet(n.GetName(), ttl, n.GetClass(), rrtype, nil)
 	}
-	return set
+	return set, nil
 }
 
 // Get NameNode.

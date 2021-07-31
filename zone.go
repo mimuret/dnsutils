@@ -10,13 +10,15 @@ import (
 
 var _ ZoneInterface = &Zone{}
 
+// Zone is implement of ZoneInterface
 type Zone struct {
 	name  string
 	root  NameNodeInterface
 	class dns.Class
 }
 
-// create Zone. Not return nil
+// NewZone creates Zone.
+// returns ErrBadName when name is not domain name
 func NewZone(name string, class dns.Class) (*Zone, error) {
 	name = dns.CanonicalName(name)
 	if _, ok := dns.IsDomainName(name); !ok {
@@ -30,16 +32,18 @@ func NewZone(name string, class dns.Class) (*Zone, error) {
 	}, nil
 }
 
-// return dns.Class
+// GetClass returns zone class
 func (z *Zone) GetClass() dns.Class { return z.class }
 
-// return canonical zone name
+// GetName returns canonical zone name
 func (z *Zone) GetName() string { return z.name }
 
-// return zone apex NameNode
+// GetRootNode returns zone apex NameNode
+// If zone is not created by NewZone, maybe it returns nil
 func (z *Zone) GetRootNode() NameNodeInterface { return z.root }
 
-// read zonefile format data
+// Read reads zone data from zonefile (RFC1035)
+// It overrides zone's name and class when root node not exist.
 func (z *Zone) Read(r io.Reader) error {
 	zp := dns.NewZoneParser(r, z.GetName(), "")
 	var (
@@ -58,9 +62,9 @@ func (z *Zone) Read(r io.Reader) error {
 	if soa == nil {
 		return fmt.Errorf("not found SOA record")
 	}
-	z.class = dns.Class(soa.Header().Class)
-	z.name = dns.CanonicalName(soa.Header().Name)
 	if z.root == nil {
+		z.class = dns.Class(soa.Header().Class)
+		z.name = dns.CanonicalName(soa.Header().Name)
 		z.root, _ = NewNameNode(z.name, z.class)
 	}
 	for _, rr := range rrs {
@@ -68,7 +72,7 @@ func (z *Zone) Read(r io.Reader) error {
 		if !ok || nn == nil {
 			nn, _ = NewNameNode(rr.Header().Name, z.GetClass())
 		}
-		set := GetRRSetOrCreate(nn, rr.Header().Rrtype, rr.Header().Ttl)
+		set, _ := GetRRSetOrCreate(nn, rr.Header().Rrtype, rr.Header().Ttl)
 		if err := set.AddRR(rr); err != nil {
 			return fmt.Errorf("failed to add RR %v: %w", set, err)
 		}
@@ -82,6 +86,8 @@ func (z *Zone) Read(r io.Reader) error {
 	return nil
 }
 
+// UnmarshalJSON reads zone data from json.RawMessage.
+// It override zone's name and class when root node not exist.
 func (z *Zone) UnmarshalJSON(bs []byte) error {
 	v := struct {
 		Name   string  `json:"name"`
@@ -94,14 +100,13 @@ func (z *Zone) UnmarshalJSON(bs []byte) error {
 	if _, ok := dns.IsDomainName(v.Name); !ok {
 		return ErrBadName
 	}
-	z.name = dns.CanonicalName(v.Name)
-	class, err := ConvertStringToClass(v.Class)
-	if err != nil {
-		return fmt.Errorf("invalid class %s", v.Class)
-	}
-	z.class = class
-
 	if z.root == nil {
+		z.name = dns.CanonicalName(v.Name)
+		class, err := ConvertStringToClass(v.Class)
+		if err != nil {
+			return fmt.Errorf("invalid class %s", v.Class)
+		}
+		z.class = class
 		z.root, _ = NewNameNode(z.name, z.class)
 	}
 
@@ -121,6 +126,7 @@ func (z *Zone) UnmarshalJSON(bs []byte) error {
 	return nil
 }
 
+// MarshalJSON creates json.RawMessage.
 func (z *Zone) MarshalJSON() ([]byte, error) {
 	v := struct {
 		Name   string           `json:"name"`

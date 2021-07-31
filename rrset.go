@@ -27,20 +27,24 @@ type RRSet struct {
 	rrs    []dns.RR
 }
 
-// create RRSet. Not return nil
-func NewRRSet(name string, ttl uint32, class dns.Class, rrtype uint16, rrs []dns.RR) *RRSet {
+// NewRRSet creates RRSet.
+// Returns ErrBadName when name is not domain name
+func NewRRSet(name string, ttl uint32, class dns.Class, rrtype uint16, rrs []dns.RR) (*RRSet, error) {
 	name = dns.CanonicalName(name)
+	if _, ok := dns.IsDomainName(name); !ok {
+		return nil, ErrBadName
+	}
 	return &RRSet{
 		name:   name,
 		ttl:    ttl,
 		rrtype: rrtype,
 		class:  class,
 		rrs:    rrs,
-	}
+	}, nil
 }
 
-// create RRSet from rr
-// if rr is nil return nil
+// NewRRSetFromRR creates RRSet from dns.RR
+// If rr is nil return nil
 func NewRRSetFromRR(rr dns.RR) *RRSet {
 	if rr == nil {
 		return nil
@@ -54,11 +58,11 @@ func NewRRSetFromRR(rr dns.RR) *RRSet {
 	}
 }
 
-// create RRSet from rrs.
-// It creates by first RR useing NewRRSetFromRR.
-// And add RR 2nd and subsequent RR.
-// if AddRR failed, return nil
-// if rrs is nil return nil
+// NewRRSetFromRRs creates RRSet from []dns.RR.
+// It creates RRset by first RR using NewRRSetFromRR.
+// 2nd and subsequent RR are add rrset using RRSet.AddRR.
+// If RRSet.AddRR failed, return nil
+// If rrs is nil return nil
 func NewRRSetFromRRs(rrs []dns.RR) *RRSet {
 	if len(rrs) == 0 {
 		return nil
@@ -76,17 +80,18 @@ func NewRRSetFromRRs(rrs []dns.RR) *RRSet {
 	return set
 }
 
-// return canonical name
+// GetName returns canonical name
 func (r *RRSet) GetName() string {
 	return r.name
 }
 
-// return ttl
+// GetTTL returns ttl
 func (r *RRSet) GetTTL() uint32 {
 	return r.ttl
 }
 
-// set ttl. It change RRs ttl too.
+// SetTTL changes RRSet.ttl.
+// And changes all of RRSet rr ttl.
 func (r *RRSet) SetTTL(ttl uint32) {
 	for _, rr := range r.rrs {
 		rr.Header().Ttl = ttl
@@ -94,22 +99,22 @@ func (r *RRSet) SetTTL(ttl uint32) {
 	r.ttl = ttl
 }
 
-// return rtype
+// GetRRtype returns rtype
 func (r *RRSet) GetRRtype() uint16 {
 	return r.rrtype
 }
 
-// return dns.Class
+// GetClass returns dns.Class
 func (r *RRSet) GetClass() dns.Class {
 	return r.class
 }
 
-// return rr slice
+// GetRRs returns []dns.RR
 func (r *RRSet) GetRRs() []dns.RR {
 	return r.rrs
 }
 
-// Add resource record
+// AddRR add resource record
 // rr is must equals al of name,ttl,class and rrtype.
 // if duplicate RDATA, It will be ignored.
 // It returns err when any of name, ttl, class and rrtype not equal.
@@ -144,7 +149,7 @@ func (r *RRSet) AddRR(rr dns.RR) error {
 	return nil
 }
 
-// remove resource record
+// RemoveRR removes resource record
 // if not match rr. It will be ignored.
 func (r *RRSet) RemoveRR(rr dns.RR) error {
 	res := []dns.RR{}
@@ -157,7 +162,7 @@ func (r *RRSet) RemoveRR(rr dns.RR) error {
 	return nil
 }
 
-// copy rrset
+// Copy returns copy rrset
 func (r *RRSet) Copy() RRSetInterface {
 	copy := &RRSet{}
 	*copy = *r

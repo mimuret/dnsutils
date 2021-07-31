@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	NotSupport            = fmt.Errorf("not support")
-	NotChangeAbleNameNode = fmt.Errorf("name node not changeable")
-	NotChangeAbleRRset    = fmt.Errorf("rrset not changeable")
+	ErrNotSupport            = fmt.Errorf("not support")
+	ErrNotChangeAbleNameNode = fmt.Errorf("name node not changeable")
+	ErrNotChangeAbleRRset    = fmt.Errorf("rrset not changeable")
 )
 
 type ZoneInterface interface {
