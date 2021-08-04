@@ -189,10 +189,10 @@ var _ = Describe("utils", func() {
 			})
 		})
 		When("not name node subdomain or same domain", func() {
-			It("returns ErrNotSubdomain", func() {
+			It("returns ErrNotInDomain", func() {
 				root := MustNewNameNode("example.jp.", dns.ClassINET)
 				_, err := dnsutils.GetNameNodeOrCreate(root, "example.com")
-				Expect(err).To(Equal(dnsutils.ErrNotSubdomain))
+				Expect(err).To(Equal(dnsutils.ErrNotInDomain))
 			})
 		})
 		When("exist node", func() {
@@ -203,7 +203,7 @@ var _ = Describe("utils", func() {
 				wwwNode, err := dnsutils.NewNameNode("www.example.jp.", dns.ClassINET)
 				Expect(err).To(Succeed())
 				wwwNode.SetRRSet(set)
-				root.SetNameNode(wwwNode)
+				dnsutils.SetNameNodeToNameNode(root, wwwNode)
 				Expect(dnsutils.GetNameNodeOrCreate(root, "www.example.jp")).To(Equal(wwwNode))
 			})
 		})

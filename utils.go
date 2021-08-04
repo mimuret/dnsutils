@@ -1,6 +1,7 @@
 package dnsutils
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -9,14 +10,18 @@ import (
 )
 
 var (
+	// ErrRdata returns when rdata is invalid while parsing RDATA.
 	ErrRdata = dns.ErrRdata
+
+	// ErrNotTreeBroken returns tree is broken
+	ErrNotTreeBroken = fmt.Errorf("name tree broken")
 )
 
-// name equal check.
-// input name accept non-normalized name.
+// Equals check that both names are equal.
+// Input names can accept non-normalized name.
 func Equals(a, b string) bool { return dns.CanonicalName(a) == dns.CanonicalName(b) }
 
-// ENT check
+// IsENT check that node is empty non terminal.
 func IsENT(n NameNodeInterface) bool {
 	for _, set := range n.CopyRRSetMap() {
 		if set.Len() > 0 {
@@ -26,7 +31,7 @@ func IsENT(n NameNodeInterface) bool {
 	return true
 }
 
-// rrset equal check, ttl value will be ignored.
+// IsEqualsRRSet check that both rrset equal.However ttl value will be ignored.
 func IsEqualsRRSet(a, b RRSetInterface) bool {
 	if a.GetName() != b.GetName() {
 		return false
@@ -56,7 +61,7 @@ func IsEqualsRRSet(a, b RRSetInterface) bool {
 	return true
 }
 
-// rrset equal check, ttl value not be ignored.
+// IsCompleteEqualsRRSet check that both rrset equal.
 func IsCompleteEqualsRRSet(a, b RRSetInterface) bool {
 	if IsEqualsRRSet(a, b) {
 		if a.GetTTL() == b.GetTTL() {
@@ -66,9 +71,9 @@ func IsCompleteEqualsRRSet(a, b RRSetInterface) bool {
 	return false
 }
 
-// check empty rrset.
-// if set is nil, it returns false.
-// if set radata is empty, return false.
+// IsEmptyRRSet check that rrset is empty.
+// if rrset is nil, it returns false.
+// if radata is empty, return false.
 // other than that return true.
 func IsEmptyRRSet(set RRSetInterface) bool {
 	if set == nil {
@@ -77,7 +82,7 @@ func IsEmptyRRSet(set RRSetInterface) bool {
 	return set.Len() == 0
 }
 
-// Get rrset.
+// GetRRSetOrCreate returns rrset from name node.
 // if exist rrset, returns it.
 // if not exist rrset, It create new rrset and return it.
 // but new rrset is not link to NameNode. Maybe you can use SetRRSet.
@@ -89,17 +94,17 @@ func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32) (RRSetInte
 	return set, nil
 }
 
-// Get NameNode.
+// GetNameNodeOrCreate returns name node from arg name node.
 // if exist NameNode, returns it.
 // if not exist NameNode, It create new NameNode and return it.
-// but new NameNode is not link to arg NodeName. Maybe you can use SetNameNode.
+// but new NameNode is not link to from arg name node. Maybe you can use SetNameNode.
 func GetNameNodeOrCreate(n NameNodeInterface, name string) (NameNodeInterface, error) {
 	name = dns.CanonicalName(name)
 	if _, ok := dns.IsDomainName(name); !ok {
 		return nil, ErrBadName
 	}
 	if !dns.IsSubDomain(n.GetName(), name) {
-		return nil, ErrNotSubdomain
+		return nil, ErrNotInDomain
 	}
 	nn, ok := n.GetNameNode(name)
 	if !ok {
@@ -108,7 +113,65 @@ func GetNameNodeOrCreate(n NameNodeInterface, name string) (NameNodeInterface, e
 	return nn, nil
 }
 
-// Get Rdata from dns.RR
+// SetNameNode adds NameNodeInterface into tree.
+func SetNameNode(n, nn NameNodeInterface, newFunc func(name string, class dns.Class) NameNodeInterface) error {
+	if !dns.IsSubDomain(n.GetName(), nn.GetName()) {
+		return ErrNotInDomain
+	}
+	searchNode, ok := n.GetNameNode(nn.GetName())
+	for !ok {
+		parentLabels := dns.SplitDomainName(searchNode.GetName())
+		childLabels := dns.SplitDomainName(nn.GetName())
+		childName := strings.Join(childLabels[len(childLabels)-len(parentLabels)-1:], ".")
+		childNode := newFunc(childName, n.GetClass())
+		if err := searchNode.AddChildNameNode(childNode); err != nil {
+			return err
+		}
+		searchNode, ok = n.GetNameNode(nn.GetName())
+	}
+	searchNode.SetValue(nn)
+	return nil
+}
+
+// SetNameNode adds NameNode into tree.
+// if not exist parent not, create ENT node
+// if exist same node, override child and rrsetMpa
+func SetNameNodeToNameNode(n, nn NameNodeInterface) error {
+	return SetNameNode(n, nn, func(name string, class dns.Class) NameNodeInterface {
+		node, _ := NewNameNode(name, class)
+		return node
+	})
+}
+
+// RemoveNameNode remove NameNodeInterface from tree.
+func RemoveNameNode(n NameNodeInterface, name string) error {
+	name = dns.CanonicalName(name)
+	if !dns.IsSubDomain(n.GetName(), name) {
+		return ErrNotInDomain
+	}
+	if Equals(n.GetName(), name) {
+		return fmt.Errorf("name and NameNode's names are equals")
+	}
+	_, exist := n.GetNameNode(name)
+	if !exist {
+		return nil
+	}
+	childLabels := dns.SplitDomainName(name)
+	for i := 0; i < len(childLabels)-1; i++ {
+		childName := dns.CanonicalName(strings.Join(childLabels[i:], "."))
+		subName := dns.CanonicalName(strings.Join(childLabels[i+1:], "."))
+		subNode, exist := n.GetNameNode(subName)
+		if !exist {
+			return ErrNotTreeBroken
+		}
+		if !IsENT(subNode) {
+			return subNode.RemoveChildNameNode(childName)
+		}
+	}
+	return nil
+}
+
+// GetRDATA returns RDATA from dns.RR
 func GetRDATA(rr dns.RR) string {
 	v := strings.SplitN(rr.String(), "\t", 5)
 	if len(v) != 5 {
@@ -117,7 +180,7 @@ func GetRDATA(rr dns.RR) string {
 	return v[4]
 }
 
-// Get Rdata from dns.RR
+// GetRDATASlice returns RDATA from rrset
 func GetRDATASlice(rrset RRSetInterface) []string {
 	rdata := []string{}
 	rdataMap := map[string]struct{}{}
@@ -131,7 +194,7 @@ func GetRDATASlice(rrset RRSetInterface) []string {
 	return rdata
 }
 
-// set rdata into rrset
+// SetRdata set rdata into rrset
 func SetRdata(set RRSetInterface, rdata []string) error {
 	rrs := []dns.RR{}
 	for _, v := range rdata {
@@ -150,15 +213,19 @@ func SetRdata(set RRSetInterface, rdata []string) error {
 
 }
 
-// Make dns.RR from RRSet, rdata string
+// MakeRR returns dns.RR by RRSet and rdata string
 func MakeRR(r RRSetInterface, rdata string) (dns.RR, error) {
 	return dns.NewRR(r.GetName() + "\t" + strconv.FormatInt(int64(r.GetTTL()), 10) + "\t" + dns.ClassToString[uint16(r.GetClass())] + "\t" + dns.TypeToString[r.GetRRtype()] + "\t" + rdata)
 }
 
+// ConvertStringToType returns uint16 dns rrtype by string
+// If it failed to parse, returns ErrInvalid
 func ConvertStringToType(s string) (uint16, error) {
 	return convertStringToUint16(dns.StringToType, "TYPE", s)
 }
 
+// ConvertStringToClass returns dns.Class by string
+// If it failed to parse, returns ErrInvalid
 func ConvertStringToClass(s string) (dns.Class, error) {
 	class, err := convertStringToUint16(dns.StringToClass, "CLASS", s)
 	return dns.Class(class), err
@@ -179,15 +246,17 @@ func convertStringToUint16(def map[string]uint16, prefix, s string) (uint16, err
 	return 0, ErrInvalid
 }
 
+// ConvertTypeToString returns RRType string by uint16 dns rrtype.
 func ConvertTypeToString(i uint16) string {
-	return convertUint1ToString(dns.TypeToString, "TYPE", i)
+	return convertUint16ToString(dns.TypeToString, "TYPE", i)
 }
 
+// ConvertClassToString returns DNS Class string by dns.Class
 func ConvertClassToString(i dns.Class) string {
-	return convertUint1ToString(dns.ClassToString, "CLASS", uint16(i))
+	return convertUint16ToString(dns.ClassToString, "CLASS", uint16(i))
 }
 
-func convertUint1ToString(def map[uint16]string, prefix string, i uint16) string {
+func convertUint16ToString(def map[uint16]string, prefix string, i uint16) string {
 	if s, ok := def[i]; ok {
 		return s
 	}

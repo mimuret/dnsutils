@@ -79,7 +79,7 @@ func (z *Zone) Read(r io.Reader) error {
 		if err := nn.SetRRSet(set); err != nil {
 			return fmt.Errorf("failed to set rrset: %w", err)
 		}
-		if err := z.GetRootNode().SetNameNode(nn); err != nil {
+		if err := SetNameNodeToNameNode(z.GetRootNode(), nn); err != nil {
 			return fmt.Errorf("failed to set node: %w", err)
 		}
 	}
@@ -118,7 +118,7 @@ func (z *Zone) UnmarshalJSON(bs []byte) error {
 		if err := nn.SetRRSet(&set); err != nil {
 			return fmt.Errorf("failed to set rrset: %w", err)
 		}
-		if err := z.GetRootNode().SetNameNode(nn); err != nil {
+		if err := SetNameNodeToNameNode(z.GetRootNode(), nn); err != nil {
 			return fmt.Errorf("failed to set node: %w", err)
 		}
 	}
@@ -126,7 +126,7 @@ func (z *Zone) UnmarshalJSON(bs []byte) error {
 	return nil
 }
 
-// MarshalJSON creates json.RawMessage.
+// MarshalJSON returns json.RawMessage.
 func (z *Zone) MarshalJSON() ([]byte, error) {
 	v := struct {
 		Name   string           `json:"name"`

@@ -20,46 +20,45 @@ type ZoneInterface interface {
 }
 
 type NameNodeInterface interface {
-	// return canonical name
+	// GetName returns canonical name
 	GetName() string
-	// retrn dns class
+	// GetName returns class
 	GetClass() dns.Class
 
-	// isStrict=true, NameNode is target name
-	// isStrict=false, NameNode is nearly parrent path node
+	// GetNameNode returns NameNode by target name
+	// if return value isStrict is true, NameNode is target name NameNode. (strict match)
+	// if isStrict is false and node nos it nil, node is nearly parrent path node. (loose match)
+	// if isStrict is false and node is nil, target name is not in-domain.
 	GetNameNode(target string) (node NameNodeInterface, isStrict bool)
 
-	// return child name
+	// CopyChildNodes returns child name node map
+	// map key is canonical name
 	CopyChildNodes() map[string]NameNodeInterface
 
-	// return rrset map
+	// CopyRRSetMap returns rrset map
+	// map key is uint16 rrtype
 	CopyRRSetMap() map[uint16]RRSetInterface
 
-	// return rrset
+	// GetRRSet returns rrset by rrtype
+	// if not exist rrset return nil
 	GetRRSet(rrtype uint16) RRSetInterface
 
-	// iterate by RRSetInterface
+	// IterateNameRRSet can iterate function by RRSetInterface
+	// sort oreder is implementation dependent.
 	IterateNameRRSet(func(RRSetInterface) error) error
 
-	// iterate by RRSetInterface
+	// IterateNameNode can iterate function by NameNodeInterface
+	// sort oreder is implementation dependent.
 	IterateNameNode(func(NameNodeInterface) error) error
 
-	// add directly child node
-	AddChildNode(NameNodeInterface) error
+	// AddChildNode adds child node into children.
+	AddChildNameNode(NameNodeInterface) error
 
-	// set NameNode into tree
-	// if not exist parent not, create ENT node
-	// if exist same node, override child and rrsetMpa
-	SetNameNode(NameNodeInterface) error
+	// RemoveNameNode removed child node.
+	RemoveChildNameNode(name string) error
 
-	// override child and rrsetMap
+	// SetValue override child and rrsetMap
 	SetValue(NameNodeInterface) error
-
-	// childRemoved used by RemoveNameNode for ENT removed.
-	// usually,There is no need to consider.
-	// if child node is removed, childRemoved returned true
-	// if grand child node is removed but child node is not removed, childRemoved returned false
-	RemoveNameNode(name string) (childRemoved bool, err error)
 
 	// override rrset
 	SetRRSet(RRSetInterface) error

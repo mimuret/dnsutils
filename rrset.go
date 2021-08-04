@@ -10,15 +10,21 @@ import (
 var _ RRSetInterface = &RRSet{}
 
 var (
-	ErrTTL      = fmt.Errorf("not equals ttl")
-	ErrRRName   = fmt.Errorf("not equals rr name")
-	ErrRRType   = fmt.Errorf("not equals rrtype")
-	ErrClass    = fmt.Errorf("not equals class")
+	// ErrTTL returns when rrset's ttl and rr's ttl are not equals.
+	ErrTTL = fmt.Errorf("not equals ttl")
+	// ErrRRName returns when rrset's name and rr's name are not equals.
+	ErrRRName = fmt.Errorf("not equals rr name")
+	// ErrRRType returns when rrset's rrtype and rr's rrtype are not equals.
+	ErrRRType = fmt.Errorf("not equals rrtype")
+	// ErrClass returns when rrset's class and rr's class are not equals.
+	ErrClass = fmt.Errorf("not equals class")
+	// ErrConflict returns when there is more than one SOA RDATA or CNAME RDATA.
 	ErrConflict = fmt.Errorf("conflict RR")
-	ErrInvalid  = fmt.Errorf("invalid data")
+	// ErrInvalid returns when class or type is invalid format.
+	ErrInvalid = fmt.Errorf("invalid data")
 )
 
-// RRSet
+// RRSet is implement of RRSetInterface
 type RRSet struct {
 	name   string
 	ttl    uint32
@@ -169,7 +175,7 @@ func (r *RRSet) Copy() RRSetInterface {
 	return copy
 }
 
-// return number of rdata
+// Len returns number of rdata
 func (r *RRSet) Len() int {
 	return len(r.rrs)
 }
@@ -182,6 +188,7 @@ type jsonRRsetStruct struct {
 	RDATA  []string `json:"rdata"`
 }
 
+// UnmarshalJSON reads rrset data from json.RawMessage.
 func (r *RRSet) UnmarshalJSON(bs []byte) error {
 	var (
 		v = &jsonRRsetStruct{}
@@ -210,10 +217,12 @@ func (r *RRSet) UnmarshalJSON(bs []byte) error {
 	return nil
 }
 
+// MarshalJSON returns json.RawMessage.
 func (r *RRSet) MarshalJSON() ([]byte, error) {
 	return MarshalJSONRRset(r)
 }
 
+// MarshalJSONRRset returns json.RawMessage by rrset.
 func MarshalJSONRRset(set RRSetInterface) ([]byte, error) {
 	v := &jsonRRsetStruct{}
 	v.Name = set.GetName()

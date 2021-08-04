@@ -201,7 +201,7 @@ func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int
 			if err := nn.SetRRSet(set); err != nil {
 				return dns.RcodeServerFailure
 			}
-			if err := tempNode.SetNameNode(nn); err != nil {
+			if err := dnsutils.SetNameNodeToNameNode(tempNode, nn); err != nil {
 				return dns.RcodeServerFailure
 			}
 		} else {
