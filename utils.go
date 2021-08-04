@@ -113,7 +113,9 @@ func GetNameNodeOrCreate(n NameNodeInterface, name string) (NameNodeInterface, e
 	return nn, nil
 }
 
-// SetNameNode adds NameNodeInterface into tree.
+// SetNameNode adds NameNode into tree.
+// if not exist parent not, create ENT NameNodeInterface by newFunc.s
+// if exist same node, it overrides children and rrests.
 func SetNameNode(n, nn NameNodeInterface, newFunc func(name string, class dns.Class) NameNodeInterface) error {
 	if !dns.IsSubDomain(n.GetName(), nn.GetName()) {
 		return ErrNotInDomain
@@ -133,9 +135,7 @@ func SetNameNode(n, nn NameNodeInterface, newFunc func(name string, class dns.Cl
 	return nil
 }
 
-// SetNameNode adds NameNode into tree.
-// if not exist parent not, create ENT node
-// if exist same node, override child and rrsetMpa
+// SetNameNodeToNameNode adds NameNode into tree using NameNode.
 func SetNameNodeToNameNode(n, nn NameNodeInterface) error {
 	return SetNameNode(n, nn, func(name string, class dns.Class) NameNodeInterface {
 		node, _ := NewNameNode(name, class)

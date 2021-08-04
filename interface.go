@@ -7,11 +7,13 @@ import (
 )
 
 var (
-	ErrNotSupport            = fmt.Errorf("not support")
-	ErrNotChangeAbleNameNode = fmt.Errorf("name node not changeable")
-	ErrNotChangeAbleRRset    = fmt.Errorf("rrset not changeable")
+	// ErrNotSupport returns when method is not implemented.
+	ErrNotSupport = fmt.Errorf("not support")
+	// ErrNotChangeAble returns by change methods when can not change values.
+	ErrNotChangeAble = fmt.Errorf("not changeable")
 )
 
+// ZoneInterface manages zone root node
 type ZoneInterface interface {
 	// return canonical zone name
 	GetName() string
@@ -19,6 +21,7 @@ type ZoneInterface interface {
 	GetClass() dns.Class
 }
 
+// NameNodeInterface manages node of name tree
 type NameNodeInterface interface {
 	// GetName returns canonical name
 	GetName() string
@@ -60,39 +63,45 @@ type NameNodeInterface interface {
 	// SetValue override child and rrsetMap
 	SetValue(NameNodeInterface) error
 
-	// override rrset
+	// SetRRSet overrides rrset
 	SetRRSet(RRSetInterface) error
-	// remove rrset
+
+	// RemoveRRSet removes rrset
 	RemoveRRSet(rrtype uint16) error
-	// return not empty rrset
+
+	// RRSetLen returns the number of not empty rrset
 	RRSetLen() int
 }
 
+// RRSetInterface manages rrset
 type RRSetInterface interface {
-	// return canonical name
+	// GetName returns canonical name
 	GetName() string
-	// return rtype
+
+	// GetRRtype returns rrtype
 	GetRRtype() uint16
-	// return dns.Class
+
+	// GetClass returns dns.Class
 	GetClass() dns.Class
 
-	// return rtype
+	// GetTTL returns rtype
 	GetTTL() uint32
-	// set ttl
+
+	// SetTTL sets ttl
 	SetTTL(uint32)
 
-	// return rr slice
+	// GetRRs returns rr slice
 	GetRRs() []dns.RR
-	// number of rdata
+
+	// Len returns number of rdata
 	Len() int
 
-	// Add Resource record
+	// AddRR adds dns.RR
 	AddRR(dns.RR) error
 
-	// Remove Resource record
-	// return err
-	// return err When rtype is SOA or CNAME, and it number is multiple.
+	// RemoveRR removes dns.RR
 	RemoveRR(dns.RR) error
 
+	// Copy returns a copy
 	Copy() RRSetInterface
 }

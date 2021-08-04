@@ -24,7 +24,7 @@ var (
 	ErrClassNotEqual = fmt.Errorf("class not equals")
 	// ErrConflictCNAME returns by SetRRSet when there is more than one SOA RDATA.
 	ErrConflictCNAME = fmt.Errorf("name node can't set both CNAME and other")
-	// ErrConflictCNAME returns by SetRRSet when there is more than one RDATA RDATA.
+	// ErrConflictDNAME returns by SetRRSet when there is more than one RDATA RDATA.
 	ErrConflictDNAME = fmt.Errorf("name node can't set both DNAME and other")
 )
 
@@ -199,10 +199,7 @@ func (n *NameNode) AddChildNameNode(nn NameNodeInterface) error {
 	return nil
 }
 
-// RemoveNameNode is implement of NameNodeInterface.RemoveNameNode
-// childRemoved used by RemoveNameNode for ENT removed.
-// usually,There is no need to consider.
-// if grand child node is removed but child node is not removed, childRemoved returned false
+// RemoveChildNameNode is implement of NameNodeInterface.AddChildNameNode
 func (n *NameNode) RemoveChildNameNode(name string) error {
 	name = dns.CanonicalName(name)
 	if !dns.IsSubDomain(n.GetName(), name) {
@@ -228,6 +225,7 @@ func (n *NameNode) RemoveChildNameNode(name string) error {
 	return nil
 }
 
+// SetRRSet is implement of NameNodeInterface.SetRRSet
 func (n *NameNode) SetRRSet(set RRSetInterface) error {
 	if set.GetName() != n.GetName() {
 		return ErrNameNotEqual
@@ -251,6 +249,7 @@ func (n *NameNode) SetRRSet(set RRSetInterface) error {
 	return nil
 }
 
+// RemoveRRSet is implement of NameNodeInterface.RemoveRRSet
 func (n *NameNode) RemoveRRSet(rrtype uint16) error {
 	n.Lock()
 	defer n.Unlock()
@@ -260,6 +259,7 @@ func (n *NameNode) RemoveRRSet(rrtype uint16) error {
 	return nil
 }
 
+// RRSetLen is implement of NameNodeInterface.RRSetLen
 func (n *NameNode) RRSetLen() int {
 	i := 0
 	for _, set := range n.rrsetMap() {
