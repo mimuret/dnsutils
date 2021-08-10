@@ -1,0 +1,2 @@
+example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300
+example.com. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300

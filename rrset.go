@@ -1,6 +1,7 @@
 package dnsutils
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/miekg/dns"
@@ -9,14 +10,19 @@ import (
 var _ RRSetInterface = &RRSet{}
 
 var (
-	ErrTTL      = fmt.Errorf("Not equals ttl")
-	ErrRRName   = fmt.Errorf("Not equals rr name")
-	ErrRRType   = fmt.Errorf("Not equals rrtype")
-	ErrClass    = fmt.Errorf("Not equals class")
-	ErrConflict = fmt.Errorf("Conflict RR")
+	// ErrTTL returns when rrset's ttl and rr's ttl are not equals.
+	ErrTTLNotEqual = fmt.Errorf("not equals ttl")
+	// ErrRRType returns when rrset's rrtype and rr's rrtype are not equals.
+	ErrRRTypeNotEqual = fmt.Errorf("not equals rrtype")
+	// ErrConflict returns when there is more than one SOA RDATA or CNAME RDATA.
+	ErrConflict = fmt.Errorf("conflict RR")
+	// ErrInvalid returns when class or type is invalid format.
+	ErrInvalid = fmt.Errorf("invalid data")
+	// ErrFormat returns when input invalid format data.
+	ErrFormat = fmt.Errorf("input format error")
 )
 
-// RRSet
+// RRSet is implement of RRSetInterface
 type RRSet struct {
 	name   string
 	ttl    uint32
@@ -25,20 +31,24 @@ type RRSet struct {
 	rrs    []dns.RR
 }
 
-// create RRSet. Not return nil
-func NewRRSet(name string, ttl uint32, class dns.Class, rrtype uint16, rrs []dns.RR) *RRSet {
+// NewRRSet creates RRSet.
+// Returns ErrBadName when name is not domain name
+func NewRRSet(name string, ttl uint32, class dns.Class, rrtype uint16, rrs []dns.RR) (*RRSet, error) {
 	name = dns.CanonicalName(name)
+	if _, ok := dns.IsDomainName(name); !ok {
+		return nil, ErrBadName
+	}
 	return &RRSet{
 		name:   name,
 		ttl:    ttl,
 		rrtype: rrtype,
 		class:  class,
 		rrs:    rrs,
-	}
+	}, nil
 }
 
-// create RRSet from rr
-// if rr is nil return nil
+// NewRRSetFromRR creates RRSet from dns.RR
+// If rr is nil return nil
 func NewRRSetFromRR(rr dns.RR) *RRSet {
 	if rr == nil {
 		return nil
@@ -52,11 +62,11 @@ func NewRRSetFromRR(rr dns.RR) *RRSet {
 	}
 }
 
-// create RRSet from rrs.
-// It creates by first RR useing NewRRSetFromRR.
-// And add RR 2nd and subsequent RR.
-// if AddRR failed, return nil
-// if rrs is nil return nil
+// NewRRSetFromRRs creates RRSet from []dns.RR.
+// It creates RRset by first RR using NewRRSetFromRR.
+// 2nd and subsequent RR are add rrset using RRSet.AddRR.
+// If RRSet.AddRR failed, return nil
+// If rrs is nil return nil
 func NewRRSetFromRRs(rrs []dns.RR) *RRSet {
 	if len(rrs) == 0 {
 		return nil
@@ -74,17 +84,18 @@ func NewRRSetFromRRs(rrs []dns.RR) *RRSet {
 	return set
 }
 
-// return canonical name
+// GetName returns canonical name
 func (r *RRSet) GetName() string {
 	return r.name
 }
 
-// return ttl
+// GetTTL returns ttl
 func (r *RRSet) GetTTL() uint32 {
 	return r.ttl
 }
 
-// set ttl. It change RRs ttl too.
+// SetTTL changes RRSet.ttl.
+// And changes all of RRSet rr ttl.
 func (r *RRSet) SetTTL(ttl uint32) {
 	for _, rr := range r.rrs {
 		rr.Header().Ttl = ttl
@@ -92,38 +103,38 @@ func (r *RRSet) SetTTL(ttl uint32) {
 	r.ttl = ttl
 }
 
-// return rtype
+// GetRRtype returns rtype
 func (r *RRSet) GetRRtype() uint16 {
 	return r.rrtype
 }
 
-// return dns.Class
+// GetClass returns dns.Class
 func (r *RRSet) GetClass() dns.Class {
 	return r.class
 }
 
-// return rr slice
+// GetRRs returns []dns.RR
 func (r *RRSet) GetRRs() []dns.RR {
 	return r.rrs
 }
 
-// Add resource record
+// AddRR add resource record
 // rr is must equals al of name,ttl,class and rrtype.
 // if duplicate RDATA, It will be ignored.
 // It returns err when any of name, ttl, class and rrtype not equal.
 // It returns err when rtype is SOA or CNAME, and it number is multiple.
 func (r *RRSet) AddRR(rr dns.RR) error {
 	if !Equals(r.name, rr.Header().Name) {
-		return ErrRRName
+		return ErrNameNotEqual
 	}
 	if rr.Header().Rrtype != r.rrtype {
-		return ErrRRType
+		return ErrRRTypeNotEqual
 	}
 	if rr.Header().Ttl != r.ttl {
-		return ErrTTL
+		return ErrTTLNotEqual
 	}
 	if rr.Header().Class != uint16(r.class) {
-		return ErrClass
+		return ErrClassNotEqual
 	}
 	if len(r.rrs) >= 1 {
 		if rr.Header().Rrtype == dns.TypeCNAME {
@@ -142,7 +153,7 @@ func (r *RRSet) AddRR(rr dns.RR) error {
 	return nil
 }
 
-// remove resource record
+// RemoveRR removes resource record
 // if not match rr. It will be ignored.
 func (r *RRSet) RemoveRR(rr dns.RR) error {
 	res := []dns.RR{}
@@ -155,14 +166,67 @@ func (r *RRSet) RemoveRR(rr dns.RR) error {
 	return nil
 }
 
-// copy rrset
+// Copy returns copy rrset
 func (r *RRSet) Copy() RRSetInterface {
 	copy := &RRSet{}
 	*copy = *r
 	return copy
 }
 
-// return number of rdata
+// Len returns number of rdata
 func (r *RRSet) Len() int {
 	return len(r.rrs)
+}
+
+type jsonRRSetStruct struct {
+	Name   string   `json:"name"`
+	Class  string   `json:"class"`
+	TTL    uint32   `json:"ttl"`
+	RRtype string   `json:"rrtype"`
+	RDATA  []string `json:"rdata"`
+}
+
+// UnmarshalJSON reads rrset data from json.RawMessage.
+func (r *RRSet) UnmarshalJSON(bs []byte) error {
+	var (
+		v = &jsonRRSetStruct{}
+	)
+	if err := json.Unmarshal(bs, v); err != nil {
+		return fmt.Errorf("failed to parse json format: %w", err)
+	}
+	r.name = dns.CanonicalName(v.Name)
+	class, err := ConvertStringToClass(v.Class)
+	if err != nil {
+		return fmt.Errorf("invalid class %s", v.Class)
+	}
+	r.class = class
+	r.ttl = uint32(v.TTL)
+	rrtype, err := ConvertStringToType(v.RRtype)
+	if err != nil {
+		return fmt.Errorf("not support rrtype %s", v.RRtype)
+	}
+	r.rrtype = rrtype
+	if len(v.RDATA) == 0 {
+		return fmt.Errorf("rdata must not be empty")
+	}
+	if err := SetRdata(r, v.RDATA); err != nil {
+		return fmt.Errorf("failed to set Rdata: %w", err)
+	}
+	return nil
+}
+
+// MarshalJSON returns json.RawMessage.
+func (r *RRSet) MarshalJSON() ([]byte, error) {
+	return MarshalJSONRRSet(r)
+}
+
+// MarshalJSONRRset returns json.RawMessage by rrset.
+func MarshalJSONRRSet(set RRSetInterface) ([]byte, error) {
+	v := &jsonRRSetStruct{}
+	v.Name = set.GetName()
+	v.Class = ConvertClassToString(set.GetClass())
+	v.TTL = set.GetTTL()
+	v.RRtype = ConvertTypeToString(set.GetRRtype())
+	v.RDATA = GetRDATASlice(set)
+	return json.Marshal(v)
 }

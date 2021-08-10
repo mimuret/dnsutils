@@ -1,4 +1,4 @@
-example.jp. 3600 IN SOA localhost. root.localost. 1 3600 900 85400 300
+example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300
 example.jp. 3600 IN NS ns1.example.jp.
 example.jp. 3600 IN NS ns2.example.jp.
 ns1.example.jp. 3600 IN A 192.168.0.1

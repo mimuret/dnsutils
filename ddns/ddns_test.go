@@ -43,7 +43,7 @@ func NewTestUpdate() *TestUpdate {
 
 func (u *TestUpdate) GetZone(*dns.Msg) (dnsutils.ZoneInterface, error) {
 	buf := bytes.NewBuffer(zonefile)
-	zone := dnsutils.NewZone("example.jp", dns.ClassINET)
+	zone, _ := dnsutils.NewZone("example.jp", dns.ClassINET, nil)
 	if err := zone.Read(buf); err != nil {
 		return nil, err
 	}
@@ -489,7 +489,7 @@ var _ = Describe("DDNS", func() {
 						rrs := []dns.RR{MustNewRR("example.jp. 300 IN CNAME www.example.net.")}
 						msg.Insert(rrs)
 						err := d.UpdateProcessing(zone, msg)
-						Expect(err).To(BeNil())
+						Expect(err).To(Succeed())
 						Expect(ui.addRRs).To(Equal([]dns.RR{}))
 					})
 				})
@@ -499,7 +499,7 @@ var _ = Describe("DDNS", func() {
 						rrset := dnsutils.NewRRSetFromRR(rr)
 						msg.Insert([]dns.RR{rr})
 						err := d.UpdateProcessing(zone, msg)
-						Expect(err).To(BeNil())
+						Expect(err).To(Succeed())
 						Expect(ui.replaceRRSet).To(Equal([]dnsutils.RRSetInterface{rrset}))
 					})
 				})
@@ -508,7 +508,7 @@ var _ = Describe("DDNS", func() {
 						rr := MustNewRR("notexist.example.jp. 300 IN CNAME www.example.org.")
 						msg.Insert([]dns.RR{rr})
 						err := d.UpdateProcessing(zone, msg)
-						Expect(err).To(BeNil())
+						Expect(err).To(Succeed())
 						Expect(ui.addRRs).To(Equal([]dns.RR{rr}))
 					})
 				})
@@ -520,7 +520,7 @@ var _ = Describe("DDNS", func() {
 						rrset := dnsutils.NewRRSetFromRR(rr)
 						msg.Insert([]dns.RR{rr})
 						err := d.UpdateProcessing(zone, msg)
-						Expect(err).To(BeNil())
+						Expect(err).To(Succeed())
 						Expect(ui.replaceRRSet).To(Equal([]dnsutils.RRSetInterface{rrset}))
 					})
 				})
@@ -529,7 +529,7 @@ var _ = Describe("DDNS", func() {
 						rr := MustNewRR("example.jp. 3600 IN SOA localhost. root.localost. 0 100 900 85400 300")
 						msg.Insert([]dns.RR{rr})
 						err := d.UpdateProcessing(zone, msg)
-						Expect(err).To(BeNil())
+						Expect(err).To(Succeed())
 						Expect(ui.replaceRRSet).To(Equal([]dnsutils.RRSetInterface{}))
 					})
 				})
@@ -540,7 +540,7 @@ var _ = Describe("DDNS", func() {
 						rrs := []dns.RR{MustNewRR("www.example.jp. 300 IN A 192.168.0.1")}
 						msg.Insert(rrs)
 						err := d.UpdateProcessing(zone, msg)
-						Expect(err).To(BeNil())
+						Expect(err).To(Succeed())
 						Expect(ui.addRRs).To(Equal([]dns.RR{}))
 					})
 				})
@@ -549,7 +549,7 @@ var _ = Describe("DDNS", func() {
 						rrs := []dns.RR{MustNewRR("example.jp. 300 IN A 192.168.0.1")}
 						msg.Insert(rrs)
 						err := d.UpdateProcessing(zone, msg)
-						Expect(err).To(BeNil())
+						Expect(err).To(Succeed())
 						Expect(ui.addRRs).To(Equal(rrs))
 					})
 				})
@@ -560,7 +560,7 @@ var _ = Describe("DDNS", func() {
 					msg.Insert(rrs)
 					ui.updateErr = fmt.Errorf("err")
 					err := d.UpdateProcessing(zone, msg)
-					Expect(err).NotTo(BeNil())
+					Expect(err).To(HaveOccurred())
 					Expect(ui.addRRs).To(Equal(rrs))
 				})
 			})
@@ -574,7 +574,7 @@ var _ = Describe("DDNS", func() {
 				}
 				msg.RemoveRRset(rrs)
 				err := d.UpdateProcessing(zone, msg)
-				Expect(err).To(BeNil())
+				Expect(err).To(Succeed())
 				Expect(ui.removeRRSet).To(Equal(map[string][]uint16{
 					"www.example.jp.": {
 						dns.TypeCNAME,
@@ -591,7 +591,7 @@ var _ = Describe("DDNS", func() {
 				}
 				msg.RemoveRRset(rrs)
 				err := d.UpdateProcessing(zone, msg)
-				Expect(err).To(BeNil())
+				Expect(err).To(Succeed())
 				Expect(ui.removeRRSet).To(Equal(map[string][]uint16{}))
 			})
 			When("update interface return err", func() {
@@ -604,7 +604,7 @@ var _ = Describe("DDNS", func() {
 					msg.RemoveRRset(rrs)
 					ui.updateErr = fmt.Errorf("err")
 					err := d.UpdateProcessing(zone, msg)
-					Expect(err).NotTo(BeNil())
+					Expect(err).To(HaveOccurred())
 				})
 			})
 		})
@@ -618,7 +618,7 @@ var _ = Describe("DDNS", func() {
 				}
 				msg.RemoveName(rrs)
 				err := d.UpdateProcessing(zone, msg)
-				Expect(err).To(BeNil())
+				Expect(err).To(Succeed())
 				Expect(ui.removeZoneApex).To(BeTrue())
 				Expect(ui.removeName).To(Equal([]string{"www.example.jp.", "ns1.example.jp.", "ns1.example.jp."}))
 			})
@@ -630,7 +630,7 @@ var _ = Describe("DDNS", func() {
 					msg.RemoveName(rrs)
 					ui.updateErr = fmt.Errorf("err")
 					err := d.UpdateProcessing(zone, msg)
-					Expect(err).NotTo(BeNil())
+					Expect(err).To(HaveOccurred())
 				})
 				It("returns err", func() {
 					rrs := []dns.RR{
@@ -639,7 +639,7 @@ var _ = Describe("DDNS", func() {
 					msg.RemoveName(rrs)
 					ui.updateErr = fmt.Errorf("err")
 					err := d.UpdateProcessing(zone, msg)
-					Expect(err).NotTo(BeNil())
+					Expect(err).To(HaveOccurred())
 				})
 			})
 		})
@@ -652,7 +652,7 @@ var _ = Describe("DDNS", func() {
 				}
 				msg.Remove(rrs)
 				err := d.UpdateProcessing(zone, msg)
-				Expect(err).To(BeNil())
+				Expect(err).To(Succeed())
 				Expect(ui.removeRR).To(Equal(rrs))
 			})
 			It("remove soa, nothing to do ", func() {
@@ -661,7 +661,7 @@ var _ = Describe("DDNS", func() {
 				}
 				msg.Remove(rrs)
 				err := d.UpdateProcessing(zone, msg)
-				Expect(err).To(BeNil())
+				Expect(err).To(Succeed())
 				Expect(ui.removeRR).To(Equal([]dns.RR{}))
 			})
 			It("remove apex ns, nothing to do ", func() {
@@ -670,7 +670,7 @@ var _ = Describe("DDNS", func() {
 				}
 				msg.Remove(rrs)
 				err := d.UpdateProcessing(zone, msg)
-				Expect(err).To(BeNil())
+				Expect(err).To(Succeed())
 				Expect(ui.removeRR).To(Equal([]dns.RR{}))
 			})
 			When("update interface return err", func() {
@@ -681,7 +681,7 @@ var _ = Describe("DDNS", func() {
 					msg.Remove(rrs)
 					ui.updateErr = fmt.Errorf("err")
 					err := d.UpdateProcessing(zone, msg)
-					Expect(err).NotTo(BeNil())
+					Expect(err).To(HaveOccurred())
 					Expect(ui.removeRR).To(Equal(rrs))
 				})
 			})

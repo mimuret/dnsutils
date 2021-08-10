@@ -2,22 +2,37 @@ package dnsutils
 
 import (
 	"fmt"
-	"strings"
+	"sort"
 	"sync"
 	"sync/atomic"
 
 	"github.com/miekg/dns"
 )
 
-var ErrNotDirectlyName = fmt.Errorf("add label count must be equals to parent label count +1")
-var ErrNotSubdomain = fmt.Errorf("name is not subdomain")
-var ErrChildExist = fmt.Errorf("child name is exist")
-var ErrNameNotEqual = fmt.Errorf("name not equals")
-var ErrClassNotEqual = fmt.Errorf("class not equals")
-var ErrConflictCNAME = fmt.Errorf("name node can't set both CNAME and other")
-var ErrConflictDNAME = fmt.Errorf("name node can't set both DNAME and other")
+var (
+	// ErrBadName returns when name is not domain name.
+	ErrBadName = fmt.Errorf("bad name")
+	// ErrNotDirectlyName returns by AddChildNode when arg node is not child name
+	ErrNotDirectlyName = fmt.Errorf("add name's label count must be equals to parent label count +1")
+	// ErrNotInDomain returns when arg node is in-domain.
+	ErrNotInDomain = fmt.Errorf("name is not subdomain")
+	// ErrChildExist returns when already exist arg node's name node.
+	ErrChildExist = fmt.Errorf("child name is exist")
+	// ErrNameNotEqual returns when arg name node's name is not equal.
+	ErrNameNotEqual = fmt.Errorf("name not equals")
+	// ErrClassNotEqual returns when arg name node's class is not equal.
+	ErrClassNotEqual = fmt.Errorf("class not equals")
+	// ErrConflictCNAME returns by SetRRSet when there is more than one SOA RDATA.
+	ErrConflictCNAME = fmt.Errorf("name node can't set both CNAME and other")
+	// ErrConflictDNAME returns by SetRRSet when there is more than one RDATA RDATA.
+	ErrConflictDNAME = fmt.Errorf("name node can't set both DNAME and other")
+	// ErrRemoveItself by RemoveChildNameNode when remove itself.
+	ErrRemoveItself = fmt.Errorf("can not remove itself")
+)
+
 var _ NameNodeInterface = &NameNode{}
 
+// NameNode is implement of NameNodeInterface
 type NameNode struct {
 	sync.Mutex
 	name          string
@@ -26,16 +41,19 @@ type NameNode struct {
 	childrenValue atomic.Value
 }
 
-// create NameNode
-func NewNameNode(name string, class dns.Class) *NameNode {
+// NewNameNode create NameNode
+func NewNameNode(name string, class dns.Class) (*NameNode, error) {
 	name = dns.CanonicalName(name)
+	if _, ok := dns.IsDomainName(name); !ok {
+		return nil, ErrBadName
+	}
 	nnn := &NameNode{
 		name:  name,
 		class: class,
 	}
 	nnn.rrsetValue.Store(make(map[uint16]RRSetInterface))
 	nnn.childrenValue.Store(make(map[string]NameNodeInterface))
-	return nnn
+	return nnn, nil
 }
 
 func (n *NameNode) rrsetMap() map[uint16]RRSetInterface {
@@ -48,21 +66,18 @@ func (n *NameNode) children() map[string]NameNodeInterface {
 	return m1
 }
 
-// return canonical name
+// GetName is implement of NameNodeInterface.GetName
 func (n *NameNode) GetName() string {
 	return n.name
 }
 
-// return ttl
+// GetClass is implement of NameNodeInterface.GetClass
 func (n *NameNode) GetClass() dns.Class {
 	return n.class
 }
 
-// search NameNode
-// if bool is true, NameNode is target name NameNode. (strict match)
-// if bool is false, NameNode is nearly parrent path node. (loose match)
-// if bool is false and NameNode is nil,name not is subdomain and NameNode name.
-func (n *NameNode) GetNameNode(name string) (NameNodeInterface, bool) {
+// GetNameNode is implement of NameNodeInterface.GetNameNode
+func (n *NameNode) GetNameNode(name string) (node NameNodeInterface, strict bool) {
 	name = dns.CanonicalName(name)
 	if !dns.IsSubDomain(n.GetName(), name) {
 		return nil, false
@@ -78,7 +93,7 @@ func (n *NameNode) GetNameNode(name string) (NameNodeInterface, bool) {
 	return n, false
 }
 
-// returns childNode Map
+// CopyChildNodes is implement of NameNodeInterface.CopyChildNodes
 func (n *NameNode) CopyChildNodes() map[string]NameNodeInterface {
 	childMap := map[string]NameNodeInterface{}
 	for name, child := range n.children() {
@@ -87,7 +102,7 @@ func (n *NameNode) CopyChildNodes() map[string]NameNodeInterface {
 	return childMap
 }
 
-// returns rrset map
+// CopyRRSetMap is implement of NameNodeInterface.CopyRRSetMap
 func (n *NameNode) CopyRRSetMap() map[uint16]RRSetInterface {
 	rrsetMap := map[uint16]RRSetInterface{}
 	for rrtype, set := range n.rrsetMap() {
@@ -98,7 +113,7 @@ func (n *NameNode) CopyRRSetMap() map[uint16]RRSetInterface {
 	return rrsetMap
 }
 
-// returns rrset
+// GetRRSet is implement of NameNodeInterface.GetRRSet
 func (n *NameNode) GetRRSet(rrtype uint16) RRSetInterface {
 	set := n.rrsetMap()[rrtype]
 	if set == nil {
@@ -107,7 +122,7 @@ func (n *NameNode) GetRRSet(rrtype uint16) RRSetInterface {
 	return set.Copy()
 }
 
-// override RRSet and Child Nodes
+// SetValue is implement of NameNodeInterface.SetValue
 func (n *NameNode) SetValue(nn NameNodeInterface) error {
 	if n.GetName() != nn.GetName() {
 		return ErrNameNotEqual
@@ -122,28 +137,54 @@ func (n *NameNode) SetValue(nn NameNodeInterface) error {
 	return nil
 }
 
+// IterateNameRRSet is implement of NameNodeInterface.IterateNameRRSet
+// first order is SOA.
+// Other than, sort  order by ASC.
 func (n *NameNode) IterateNameRRSet(f func(RRSetInterface) error) error {
-	for _, set := range n.rrsetMap() {
-		if err := f(set); err != nil {
+	rrsetMap := n.rrsetMap()
+	keys := []uint16{}
+	for key := range rrsetMap {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i] == dns.TypeSOA {
+			return true
+		}
+		if keys[j] == dns.TypeSOA {
+			return false
+		}
+		return keys[i] < keys[j]
+	})
+	for _, rrtype := range keys {
+		if err := f(rrsetMap[rrtype]); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
+// IterateNameNode is implement of NameNodeInterface.IterateNameNode
+// sort order using sort.StringSlice Sort.
 func (n *NameNode) IterateNameNode(f func(NameNodeInterface) error) error {
 	if err := f(n); err != nil {
 		return err
 	}
-	for _, nn := range n.children() {
-		if err := nn.IterateNameNode(f); err != nil {
+	rrsetMap := n.children()
+	keys := sort.StringSlice{}
+	for key := range rrsetMap {
+		keys = append(keys, key)
+	}
+	keys.Sort()
+	for _, name := range keys {
+		if err := rrsetMap[name].IterateNameNode(f); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (n *NameNode) AddChildNode(nn NameNodeInterface) error {
+// AddChildNameNode is implement of NameNodeInterface.AddChildNameNode
+func (n *NameNode) AddChildNameNode(nn NameNodeInterface) error {
 	parentLabels := dns.SplitDomainName(n.GetName())
 	childLabels := dns.SplitDomainName(nn.GetName())
 	if len(parentLabels)+1 != len(childLabels) {
@@ -160,66 +201,33 @@ func (n *NameNode) AddChildNode(nn NameNodeInterface) error {
 	return nil
 }
 
-func (n *NameNode) SetNameNode(nn NameNodeInterface) error {
-	if !dns.IsSubDomain(n.GetName(), nn.GetName()) {
-		return ErrNotSubdomain
-	}
-	searchNode, ok := n.GetNameNode(nn.GetName())
-	for !ok {
-		parentLabels := dns.SplitDomainName(searchNode.GetName())
-		childLabels := dns.SplitDomainName(nn.GetName())
-		childName := strings.Join(childLabels[len(childLabels)-len(parentLabels)-1:], ".")
-		childNode := NewNameNode(childName, n.GetClass())
-		if err := searchNode.AddChildNode(childNode); err != nil {
-			return err
-		}
-		searchNode, ok = n.GetNameNode(nn.GetName())
-	}
-	searchNode.SetValue(nn)
-	return nil
-}
-
-func (n *NameNode) RemoveNameNode(name string) (bool, error) {
+// RemoveChildNameNode is implement of NameNodeInterface.AddChildNameNode
+func (n *NameNode) RemoveChildNameNode(name string) error {
 	name = dns.CanonicalName(name)
 	if !dns.IsSubDomain(n.GetName(), name) {
-		return false, ErrNotSubdomain
+		return ErrNotInDomain
 	}
 	if Equals(n.GetName(), name) {
-		return false, ErrNotSubdomain
+		return ErrRemoveItself
 	}
 	n.Lock()
 	defer n.Unlock()
 	newChild := map[string]NameNodeInterface{}
 	var delete bool
 	for childName, child := range n.children() {
-		if dns.IsSubDomain(child.GetName(), name) {
-			if Equals(child.GetName(), name) {
-				delete = true
-			} else {
-				// child is parent path name
-				res, err := child.RemoveNameNode(name)
-				if err != nil {
-					return false, err
-				}
-				if res {
-					// child is delete
-					if IsENT(child) {
-						// this node is ENT, remove
-						delete = true
-					}
-				}
-			}
-			if !delete {
-				newChild[childName] = child
-			}
-		} else {
-			newChild[childName] = child
+		if Equals(child.GetName(), name) {
+			delete = true
+			continue
 		}
+		newChild[childName] = child
 	}
-	n.childrenValue.Store(newChild)
-	return delete, nil
+	if delete {
+		n.childrenValue.Store(newChild)
+	}
+	return nil
 }
 
+// SetRRSet is implement of NameNodeInterface.SetRRSet
 func (n *NameNode) SetRRSet(set RRSetInterface) error {
 	if set.GetName() != n.GetName() {
 		return ErrNameNotEqual
@@ -243,6 +251,7 @@ func (n *NameNode) SetRRSet(set RRSetInterface) error {
 	return nil
 }
 
+// RemoveRRSet is implement of NameNodeInterface.RemoveRRSet
 func (n *NameNode) RemoveRRSet(rrtype uint16) error {
 	n.Lock()
 	defer n.Unlock()
@@ -252,6 +261,7 @@ func (n *NameNode) RemoveRRSet(rrtype uint16) error {
 	return nil
 }
 
+// RRSetLen is implement of NameNodeInterface.RRSetLen
 func (n *NameNode) RRSetLen() int {
 	i := 0
 	for _, set := range n.rrsetMap() {
