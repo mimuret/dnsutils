@@ -11,13 +11,9 @@ var _ RRSetInterface = &RRSet{}
 
 var (
 	// ErrTTL returns when rrset's ttl and rr's ttl are not equals.
-	ErrTTL = fmt.Errorf("not equals ttl")
-	// ErrRRName returns when rrset's name and rr's name are not equals.
-	ErrRRName = fmt.Errorf("not equals rr name")
+	ErrTTLNotEqual = fmt.Errorf("not equals ttl")
 	// ErrRRType returns when rrset's rrtype and rr's rrtype are not equals.
-	ErrRRType = fmt.Errorf("not equals rrtype")
-	// ErrClass returns when rrset's class and rr's class are not equals.
-	ErrClass = fmt.Errorf("not equals class")
+	ErrRRTypeNotEqual = fmt.Errorf("not equals rrtype")
 	// ErrConflict returns when there is more than one SOA RDATA or CNAME RDATA.
 	ErrConflict = fmt.Errorf("conflict RR")
 	// ErrInvalid returns when class or type is invalid format.
@@ -127,16 +123,16 @@ func (r *RRSet) GetRRs() []dns.RR {
 // It returns err when rtype is SOA or CNAME, and it number is multiple.
 func (r *RRSet) AddRR(rr dns.RR) error {
 	if !Equals(r.name, rr.Header().Name) {
-		return ErrRRName
+		return ErrNameNotEqual
 	}
 	if rr.Header().Rrtype != r.rrtype {
-		return ErrRRType
+		return ErrRRTypeNotEqual
 	}
 	if rr.Header().Ttl != r.ttl {
-		return ErrTTL
+		return ErrTTLNotEqual
 	}
 	if rr.Header().Class != uint16(r.class) {
-		return ErrClass
+		return ErrClassNotEqual
 	}
 	if len(r.rrs) >= 1 {
 		if rr.Header().Rrtype == dns.TypeCNAME {

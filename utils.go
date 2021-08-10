@@ -14,8 +14,32 @@ var (
 	ErrRdata = dns.ErrRdata
 
 	// ErrNotTreeBroken returns tree is broken
-	ErrNotTreeBroken = fmt.Errorf("name tree broken")
+	ErrNameTreeBroken = fmt.Errorf("name tree broken")
 )
+
+type Generator interface {
+	NameNodeGenerator
+	RRSetGenerator
+}
+
+type NameNodeGenerator interface {
+	NewNameNode(name string, class dns.Class) (NameNodeInterface, error)
+}
+
+type RRSetGenerator interface {
+	NewRRSet(name string, ttl uint32, class dns.Class, rrtype uint16) (RRSetInterface, error)
+}
+
+var _ Generator = &DefaultGenerator{}
+
+type DefaultGenerator struct{}
+
+func (DefaultGenerator) NewNameNode(name string, class dns.Class) (NameNodeInterface, error) {
+	return NewNameNode(name, class)
+}
+func (DefaultGenerator) NewRRSet(name string, ttl uint32, class dns.Class, rrtype uint16) (RRSetInterface, error) {
+	return NewRRSet(name, ttl, class, rrtype, nil)
+}
 
 // Equals check that both names are equal.
 // Input names can accept non-normalized name.
@@ -86,10 +110,13 @@ func IsEmptyRRSet(set RRSetInterface) bool {
 // if exist rrset, returns it.
 // if not exist rrset, It create new rrset and return it.
 // but new rrset is not link to NameNode. Maybe you can use SetRRSet.
-func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32) (RRSetInterface, error) {
+func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32, generator RRSetGenerator) (RRSetInterface, error) {
+	if generator == nil {
+		generator = &DefaultGenerator{}
+	}
 	set := n.GetRRSet(rrtype)
 	if set == nil {
-		return NewRRSet(n.GetName(), ttl, n.GetClass(), rrtype, nil)
+		return generator.NewRRSet(n.GetName(), ttl, n.GetClass(), rrtype)
 	}
 	return set, nil
 }
@@ -98,7 +125,10 @@ func GetRRSetOrCreate(n NameNodeInterface, rrtype uint16, ttl uint32) (RRSetInte
 // if exist NameNode, returns it.
 // if not exist NameNode, It create new NameNode and return it.
 // but new NameNode is not link to from arg name node. Maybe you can use SetNameNode.
-func GetNameNodeOrCreate(n NameNodeInterface, name string) (NameNodeInterface, error) {
+func GetNameNodeOrCreate(n NameNodeInterface, name string, generator NameNodeGenerator) (NameNodeInterface, error) {
+	if generator == nil {
+		generator = &DefaultGenerator{}
+	}
 	name = dns.CanonicalName(name)
 	if _, ok := dns.IsDomainName(name); !ok {
 		return nil, ErrBadName
@@ -108,7 +138,7 @@ func GetNameNodeOrCreate(n NameNodeInterface, name string) (NameNodeInterface, e
 	}
 	nn, ok := n.GetNameNode(name)
 	if !ok {
-		return NewNameNode(name, n.GetClass())
+		return generator.NewNameNode(name, n.GetClass())
 	}
 	return nn, nil
 }
@@ -116,7 +146,10 @@ func GetNameNodeOrCreate(n NameNodeInterface, name string) (NameNodeInterface, e
 // SetNameNode adds NameNode into tree.
 // if not exist parent not, create ENT NameNodeInterface by newFunc.s
 // if exist same node, it overrides children and rrests.
-func SetNameNode(n, nn NameNodeInterface, newFunc func(name string, class dns.Class) NameNodeInterface) error {
+func SetNameNode(n, nn NameNodeInterface, generator NameNodeGenerator) error {
+	if generator == nil {
+		generator = &DefaultGenerator{}
+	}
 	if !dns.IsSubDomain(n.GetName(), nn.GetName()) {
 		return ErrNotInDomain
 	}
@@ -125,7 +158,10 @@ func SetNameNode(n, nn NameNodeInterface, newFunc func(name string, class dns.Cl
 		parentLabels := dns.SplitDomainName(searchNode.GetName())
 		childLabels := dns.SplitDomainName(nn.GetName())
 		childName := strings.Join(childLabels[len(childLabels)-len(parentLabels)-1:], ".")
-		childNode := newFunc(childName, n.GetClass())
+		childNode, err := generator.NewNameNode(childName, n.GetClass())
+		if err != nil {
+			return fmt.Errorf("failed to create ENT node: %w", err)
+		}
 		if err := searchNode.AddChildNameNode(childNode); err != nil {
 			return err
 		}
@@ -135,14 +171,6 @@ func SetNameNode(n, nn NameNodeInterface, newFunc func(name string, class dns.Cl
 	return nil
 }
 
-// SetNameNodeToNameNode adds NameNode into tree using NameNode.
-func SetNameNodeToNameNode(n, nn NameNodeInterface) error {
-	return SetNameNode(n, nn, func(name string, class dns.Class) NameNodeInterface {
-		node, _ := NewNameNode(name, class)
-		return node
-	})
-}
-
 // RemoveNameNode remove NameNodeInterface from tree.
 func RemoveNameNode(n NameNodeInterface, name string) error {
 	name = dns.CanonicalName(name)
@@ -150,7 +178,7 @@ func RemoveNameNode(n NameNodeInterface, name string) error {
 		return ErrNotInDomain
 	}
 	if Equals(n.GetName(), name) {
-		return fmt.Errorf("name and NameNode's names are equals")
+		return fmt.Errorf("name equals name node's name. can not remove itself")
 	}
 	_, exist := n.GetNameNode(name)
 	if !exist {
@@ -162,7 +190,10 @@ func RemoveNameNode(n NameNodeInterface, name string) error {
 		subName := dns.CanonicalName(strings.Join(childLabels[i+1:], "."))
 		subNode, exist := n.GetNameNode(subName)
 		if !exist {
-			return ErrNotTreeBroken
+			return ErrNameTreeBroken
+		}
+		if subNode == n {
+			return subNode.RemoveChildNameNode(childName)
 		}
 		if !IsENT(subNode) {
 			return subNode.RemoveChildNameNode(childName)

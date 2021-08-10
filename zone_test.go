@@ -36,7 +36,7 @@ var _ = Describe("Zone", func() {
 		z   *dnsutils.Zone
 	)
 	BeforeEach(func() {
-		z, err = dnsutils.NewZone("example.jp", dns.ClassINET)
+		z, err = dnsutils.NewZone("example.jp", dns.ClassINET, nil)
 		Expect(err).To(Succeed())
 	})
 	Context("Test for NewZone", func() {
@@ -47,7 +47,7 @@ var _ = Describe("Zone", func() {
 		})
 		When("invalid zone name", func() {
 			BeforeEach(func() {
-				_, err = dnsutils.NewZone("...", dns.ClassINET)
+				_, err = dnsutils.NewZone("...", dns.ClassINET, nil)
 			})
 			It("returns ErrBadName", func() {
 				Expect(err).To(Equal(dnsutils.ErrBadName))
@@ -130,7 +130,7 @@ var _ = Describe("Zone", func() {
 			It("returns not error", func() {
 				Expect(err).To(Succeed())
 				testZoneNormalBuf := bytes.NewBuffer(testZoneNormal)
-				z2, _ := dnsutils.NewZone("example.jp", dns.ClassINET)
+				z2, _ := dnsutils.NewZone("example.jp", dns.ClassINET, nil)
 				err := z2.Read(testZoneNormalBuf)
 				Expect(err).To(Succeed())
 				Expect(z2).To(Equal(z2))

@@ -1,9 +1,11 @@
 package testtool_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/miekg/dns"
+	"github.com/mimuret/dnsutils"
 	. "github.com/mimuret/dnsutils/testtool"
 
 	. "github.com/onsi/ginkgo"
@@ -61,6 +63,53 @@ var _ = Describe("testtool", func() {
 		When("input is valid", func() {
 			It("returns zone", func() {
 				Expect(MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, nil)).NotTo(BeNil())
+			})
+		})
+	})
+	Context("TestGenerator", func() {
+		var (
+			g   *TestGenerator
+			err error
+		)
+		BeforeEach(func() {
+			g = &TestGenerator{Generator: dnsutils.DefaultGenerator{}}
+		})
+		Context("NewNameNode", func() {
+			When("not exist NewNewNameNodeErr", func() {
+				BeforeEach(func() {
+					_, err = g.NewNameNode("example.jp.", dns.ClassINET)
+				})
+				It("run Generator func", func() {
+					Expect(err).Should(Succeed())
+				})
+			})
+			When("exist NewNewNameNodeErr", func() {
+				BeforeEach(func() {
+					g.NewNewNameNodeErr = fmt.Errorf("fail NewNewNameNodeErr")
+					_, err = g.NewNameNode("example.jp.", dns.ClassINET)
+				})
+				It("returns NewNewNameNodeErr", func() {
+					Expect(err).Should(Equal(g.NewNewNameNodeErr))
+				})
+			})
+		})
+		Context("NewRRSet", func() {
+			When("not exist NewRRSetErr", func() {
+				BeforeEach(func() {
+					_, err = g.NewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeTXT)
+				})
+				It("run Generator func", func() {
+					Expect(err).Should(Succeed())
+				})
+			})
+			When("exist NewRRSetErr", func() {
+				BeforeEach(func() {
+					g.NewRRSetErr = fmt.Errorf("fail NewRRSetErr")
+					_, err = g.NewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeTXT)
+				})
+				It("returns NewRRSetErr", func() {
+					Expect(err).Should(Equal(g.NewRRSetErr))
+				})
 			})
 		})
 	})

@@ -1,12 +1,26 @@
 package dnsutils_test
 
 import (
+	"fmt"
+
 	"github.com/miekg/dns"
 	"github.com/mimuret/dnsutils"
 	. "github.com/mimuret/dnsutils/testtool"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var _ dnsutils.NameNodeInterface = &BrokenNode{}
+
+type BrokenNode struct {
+	*dnsutils.NameNode
+	Children map[string]dnsutils.NameNodeInterface
+}
+
+func (n *BrokenNode) GetNameNode(target string) (node dnsutils.NameNodeInterface, isStrict bool) {
+	nn, ok := n.Children[dns.CanonicalName(target)]
+	return nn, ok
+}
 
 var _ = Describe("utils", func() {
 	var (
@@ -167,14 +181,14 @@ var _ = Describe("utils", func() {
 				root, err := dnsutils.NewNameNode("example.jp.", dns.ClassINET)
 				Expect(err).To(Succeed())
 				root.SetRRSet(set)
-				Expect(dnsutils.GetRRSetOrCreate(root, dns.TypeA, 300)).To(Equal(set))
+				Expect(dnsutils.GetRRSetOrCreate(root, dns.TypeA, 300, nil)).To(Equal(set))
 			})
 		})
 		When("not exist rrset", func() {
 			It("returns new rrset", func() {
 				root, err := dnsutils.NewNameNode("example.jp.", dns.ClassINET)
 				Expect(err).To(Succeed())
-				a4set, _ := dnsutils.GetRRSetOrCreate(root, dns.TypeAAAA, 300)
+				a4set, _ := dnsutils.GetRRSetOrCreate(root, dns.TypeAAAA, 300, nil)
 				Expect(a4set.GetRRtype()).To(Equal(dns.TypeAAAA))
 				Expect(a4set.GetName()).To(Equal("example.jp."))
 			})
@@ -184,14 +198,14 @@ var _ = Describe("utils", func() {
 		When("invalid name ", func() {
 			It("returns ErrBadName", func() {
 				root := MustNewNameNode("example.jp.", dns.ClassINET)
-				_, err := dnsutils.GetNameNodeOrCreate(root, "..www.example.jp")
+				_, err := dnsutils.GetNameNodeOrCreate(root, "..www.example.jp", nil)
 				Expect(err).To(Equal(dnsutils.ErrBadName))
 			})
 		})
 		When("not name node subdomain or same domain", func() {
 			It("returns ErrNotInDomain", func() {
 				root := MustNewNameNode("example.jp.", dns.ClassINET)
-				_, err := dnsutils.GetNameNodeOrCreate(root, "example.com")
+				_, err := dnsutils.GetNameNodeOrCreate(root, "example.com", nil)
 				Expect(err).To(Equal(dnsutils.ErrNotInDomain))
 			})
 		})
@@ -203,15 +217,15 @@ var _ = Describe("utils", func() {
 				wwwNode, err := dnsutils.NewNameNode("www.example.jp.", dns.ClassINET)
 				Expect(err).To(Succeed())
 				wwwNode.SetRRSet(set)
-				dnsutils.SetNameNodeToNameNode(root, wwwNode)
-				Expect(dnsutils.GetNameNodeOrCreate(root, "www.example.jp")).To(Equal(wwwNode))
+				dnsutils.SetNameNode(root, wwwNode, nil)
+				Expect(dnsutils.GetNameNodeOrCreate(root, "www.example.jp", nil)).To(Equal(wwwNode))
 			})
 		})
 		When("not exist node", func() {
 			It("returns new node", func() {
 				root, err := dnsutils.NewNameNode("example.jp.", dns.ClassINET)
 				Expect(err).To(Succeed())
-				wwwNode, err := dnsutils.GetNameNodeOrCreate(root, "www.example.jp")
+				wwwNode, err := dnsutils.GetNameNodeOrCreate(root, "www.example.jp", nil)
 				Expect(err).To(Succeed())
 				Expect(wwwNode.GetName()).To(Equal("www.example.jp."))
 			})
@@ -455,4 +469,174 @@ var _ = Describe("utils", func() {
 			})
 		})
 	})
+	Context("Test RemoveNameNode", func() {
+		var (
+			ok                                              bool
+			aRRSet, aaaaRRSet, blueRRSet                    *dnsutils.RRSet
+			root, www1, www2, www3, www4, blue, alpha, beta *dnsutils.NameNode
+			a11                                             = MustNewRR("example.jp. IN A 192.168.0.1")
+			a12                                             = MustNewRR("example.jp. IN A 192.168.0.2")
+			aaaa11                                          = MustNewRR("example.jp. IN AAAA 2001:db8::1")
+			aaaa12                                          = MustNewRR("example.jp. IN AAAA 2001:db8::2")
+			blueA                                           = MustNewRR("blue.www4.example.jp. IN AAAA 2001:db8::1")
+		)
+		BeforeEach(func() {
+			root = MustNewNameNode("example.jp", dns.ClassINET)
+			www1 = MustNewNameNode("www1.example.jp", dns.ClassINET)
+			www2 = MustNewNameNode("www2.example.jp", dns.ClassINET)
+			www3 = MustNewNameNode("www3.example.jp", dns.ClassINET)
+			www4 = MustNewNameNode("www4.example.jp", dns.ClassINET)
+			root.AddChildNameNode(www1)
+			root.AddChildNameNode(www2)
+			root.AddChildNameNode(www3)
+			root.AddChildNameNode(www4)
+			blue = MustNewNameNode("blue.www4.example.jp", dns.ClassINET)
+			www4.AddChildNameNode(blue)
+			alpha = MustNewNameNode("alpha.blue.www4.example.jp", dns.ClassINET)
+			blue.AddChildNameNode(alpha)
+			beta = MustNewNameNode("beta.alpha.blue.www4.example.jp", dns.ClassINET)
+			alpha.AddChildNameNode(beta)
+			aRRSet = MustNewRRSet("example.jp", 0, dns.ClassINET, dns.TypeA, []dns.RR{a11, a12})
+			aaaaRRSet = MustNewRRSet("example.jp", 0, dns.ClassINET, dns.TypeAAAA, []dns.RR{aaaa11, aaaa12})
+			root.SetRRSet(aRRSet)
+			root.SetRRSet(aaaaRRSet)
+			blueRRSet = MustNewRRSet("blue.www4.example.jp", 0, dns.ClassINET, dns.TypeA, []dns.RR{blueA})
+			blue.SetRRSet(blueRRSet)
+		})
+		It("can remove directly child node", func() {
+			err := dnsutils.RemoveNameNode(root, "www1.example.jp")
+			Expect(err).To(Succeed())
+			_, ok := root.GetNameNode("www1.example.jp")
+			Expect(ok).To(BeFalse())
+		})
+		It("no error, if name not exist", func() {
+			_, ok := root.GetNameNode("www-not-exist.example.jp")
+			Expect(ok).To(BeFalse())
+			err := dnsutils.RemoveNameNode(root, "www-not-exist.example.jp")
+			Expect(err).To(Succeed())
+		})
+		It("can remove grand child and remove ENT node", func() {
+			_, ok = root.GetNameNode("www4.example.jp")
+			Expect(ok).To(BeTrue())
+			err := dnsutils.RemoveNameNode(root, "blue.www4.example.jp")
+			Expect(err).To(Succeed())
+			_, ok = root.GetNameNode("www4.example.jp")
+			Expect(ok).To(BeFalse())
+			_, ok = root.GetNameNode("blue.www4.example.jp")
+			Expect(ok).To(BeFalse())
+			_, ok = root.GetNameNode("alpha.blue.www4.example.jp")
+			Expect(ok).To(BeFalse())
+		})
+		It("can remove grand child and not remove no ENT node", func() {
+			err := dnsutils.RemoveNameNode(root, "beta.alpha.blue.www4.example.jp")
+			Expect(err).To(Succeed())
+			_, ok := root.GetNameNode("www4.example.jp")
+			Expect(ok).To(BeTrue())
+			_, ok = root.GetNameNode("blue.www4.example.jp")
+			Expect(ok).To(BeTrue())
+			_, ok = root.GetNameNode("alpha.blue.www4.example.jp")
+			Expect(ok).To(BeFalse())
+			_, ok = root.GetNameNode("beta.alpha.blue.www4.example.jp")
+			Expect(ok).To(BeFalse())
+		})
+		It("can not be remove not sub domain", func() {
+			err := dnsutils.RemoveNameNode(root, "example.jp")
+			Expect(err).To(HaveOccurred())
+			err = dnsutils.RemoveNameNode(root, "example2.jp")
+			Expect(err).To(HaveOccurred())
+			err = dnsutils.RemoveNameNode(root, "jp")
+			Expect(err).To(HaveOccurred())
+		})
+		When("name node broken", func() {
+			var (
+				err error
+				bn  *BrokenNode
+			)
+			BeforeEach(func() {
+				bn = &BrokenNode{
+					NameNode: MustNewNameNode("example.jp", dns.ClassINET),
+					Children: map[string]dnsutils.NameNodeInterface{
+						"www.west.example.jp.": MustNewNameNode("www.west.example.jp", dns.ClassINET),
+					},
+				}
+				err = dnsutils.RemoveNameNode(bn, "www.west.example.jp")
+			})
+			It("returns ErrNameTreeBroken", func() {
+				Expect(err).To(Equal(dnsutils.ErrNameTreeBroken))
+			})
+		})
+		When("root name node is root", func() {
+			var (
+				err  error
+				root *dnsutils.NameNode
+			)
+			BeforeEach(func() {
+				root, err = dnsutils.NewNameNode(".", dns.ClassINET)
+				Expect(err).To(Succeed())
+				err = dnsutils.RemoveNameNode(root, ".")
+			})
+			It("returns ErrNameTreeBroken", func() {
+				Expect(err).To(Equal(dnsutils.ErrNameTreeBroken))
+			})
+		})
+	})
+	Context("Test SetNameNode", func() {
+		var (
+			g    *TestGenerator
+			root *dnsutils.NameNode
+		)
+		BeforeEach(func() {
+			g = &TestGenerator{
+				Generator: &dnsutils.DefaultGenerator{},
+			}
+			root = MustNewNameNode("example.jp", dns.ClassINET)
+		})
+		It("can not set name that is not subdomain", func() {
+			example2 := MustNewNameNode("example2.jp", dns.ClassINET)
+			err := dnsutils.SetNameNode(root, example2, nil)
+			Expect(err).To(HaveOccurred())
+		})
+		It("can set directly child node", func() {
+			www5 := MustNewNameNode("www5.example.jp", dns.ClassINET)
+			err := dnsutils.SetNameNode(root, www5, nil)
+			Expect(err).To(Succeed())
+			nameNode, ok := root.GetNameNode("www5.example.jp")
+			Expect(ok).To(BeTrue())
+			Expect(nameNode).To(Equal(www5))
+		})
+		It("can set not directly child node", func() {
+			red := MustNewNameNode("red.www5.example.jp", dns.ClassINET)
+			err := dnsutils.SetNameNode(root, red, nil)
+			Expect(err).To(Succeed())
+			nameNode, ok := root.GetNameNode("red.www5.example.jp")
+			Expect(ok).To(BeTrue())
+			Expect(nameNode).To(Equal(red))
+		})
+		It("can replace exist node", func() {
+			newwww1 := MustNewNameNode("www1.example.jp", dns.ClassINET)
+			set := MustNewRRSet("www.example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{
+				MustNewRR("www1.example.jp. 300 IN A 192.168.10.0"),
+			})
+			newwww1.SetRRSet(set)
+			err := dnsutils.SetNameNode(root, newwww1, nil)
+			Expect(err).To(Succeed())
+			nameNode, ok := root.GetNameNode("www1.example.jp")
+			Expect(ok).To(BeTrue())
+			Expect(nameNode).To(Equal(newwww1))
+		})
+		When("failed to create name node", func() {
+			var (
+				err error
+			)
+			BeforeEach(func() {
+				g.NewNewNameNodeErr = fmt.Errorf("failed to run NewNameNode")
+				www5 := MustNewNameNode("www5.example.jp", dns.ClassINET)
+				err = dnsutils.SetNameNode(root, www5, g)
+			})
+			It("returns error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+
 })
