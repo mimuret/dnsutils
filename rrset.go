@@ -18,6 +18,8 @@ var (
 	ErrConflict = fmt.Errorf("conflict RR")
 	// ErrInvalid returns when class or type is invalid format.
 	ErrInvalid = fmt.Errorf("invalid data")
+	// ErrFormat returns when input invalid format data.
+	ErrFormat = fmt.Errorf("input format error")
 )
 
 // RRSet is implement of RRSetInterface
@@ -176,7 +178,7 @@ func (r *RRSet) Len() int {
 	return len(r.rrs)
 }
 
-type jsonRRsetStruct struct {
+type jsonRRSetStruct struct {
 	Name   string   `json:"name"`
 	Class  string   `json:"class"`
 	TTL    uint32   `json:"ttl"`
@@ -187,7 +189,7 @@ type jsonRRsetStruct struct {
 // UnmarshalJSON reads rrset data from json.RawMessage.
 func (r *RRSet) UnmarshalJSON(bs []byte) error {
 	var (
-		v = &jsonRRsetStruct{}
+		v = &jsonRRSetStruct{}
 	)
 	if err := json.Unmarshal(bs, v); err != nil {
 		return fmt.Errorf("failed to parse json format: %w", err)
@@ -215,12 +217,12 @@ func (r *RRSet) UnmarshalJSON(bs []byte) error {
 
 // MarshalJSON returns json.RawMessage.
 func (r *RRSet) MarshalJSON() ([]byte, error) {
-	return MarshalJSONRRset(r)
+	return MarshalJSONRRSet(r)
 }
 
 // MarshalJSONRRset returns json.RawMessage by rrset.
-func MarshalJSONRRset(set RRSetInterface) ([]byte, error) {
-	v := &jsonRRsetStruct{}
+func MarshalJSONRRSet(set RRSetInterface) ([]byte, error) {
+	v := &jsonRRSetStruct{}
 	v.Name = set.GetName()
 	v.Class = ConvertClassToString(set.GetClass())
 	v.TTL = set.GetTTL()

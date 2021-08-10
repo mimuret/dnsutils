@@ -576,7 +576,7 @@ var _ = Describe("utils", func() {
 				err = dnsutils.RemoveNameNode(root, ".")
 			})
 			It("returns ErrNameTreeBroken", func() {
-				Expect(err).To(Equal(dnsutils.ErrNameTreeBroken))
+				Expect(err).To(Equal(dnsutils.ErrRemoveItself))
 			})
 		})
 	})

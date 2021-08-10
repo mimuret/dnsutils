@@ -13,7 +13,7 @@ var (
 	// ErrBadName returns when name is not domain name.
 	ErrBadName = fmt.Errorf("bad name")
 	// ErrNotDirectlyName returns by AddChildNode when arg node is not child name
-	ErrNotDirectlyName = fmt.Errorf("add label count must be equals to parent label count +1")
+	ErrNotDirectlyName = fmt.Errorf("add name's label count must be equals to parent label count +1")
 	// ErrNotInDomain returns when arg node is in-domain.
 	ErrNotInDomain = fmt.Errorf("name is not subdomain")
 	// ErrChildExist returns when already exist arg node's name node.
@@ -26,6 +26,8 @@ var (
 	ErrConflictCNAME = fmt.Errorf("name node can't set both CNAME and other")
 	// ErrConflictDNAME returns by SetRRSet when there is more than one RDATA RDATA.
 	ErrConflictDNAME = fmt.Errorf("name node can't set both DNAME and other")
+	// ErrRemoveItself by RemoveChildNameNode when remove itself.
+	ErrRemoveItself = fmt.Errorf("can not remove itself")
 )
 
 var _ NameNodeInterface = &NameNode{}
@@ -206,7 +208,7 @@ func (n *NameNode) RemoveChildNameNode(name string) error {
 		return ErrNotInDomain
 	}
 	if Equals(n.GetName(), name) {
-		return fmt.Errorf("name and NameNode's names are equals")
+		return ErrRemoveItself
 	}
 	n.Lock()
 	defer n.Unlock()

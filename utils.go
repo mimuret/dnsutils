@@ -178,7 +178,7 @@ func RemoveNameNode(n NameNodeInterface, name string) error {
 		return ErrNotInDomain
 	}
 	if Equals(n.GetName(), name) {
-		return fmt.Errorf("name equals name node's name. can not remove itself")
+		return ErrRemoveItself
 	}
 	_, exist := n.GetNameNode(name)
 	if !exist {
