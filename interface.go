@@ -88,7 +88,7 @@ type RRSetInterface interface {
 	GetTTL() uint32
 
 	// SetTTL sets ttl
-	SetTTL(uint32)
+	SetTTL(uint32) error
 
 	// GetRRs returns rr slice
 	GetRRs() []dns.RR
