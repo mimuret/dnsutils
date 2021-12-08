@@ -96,11 +96,12 @@ func (r *RRSet) GetTTL() uint32 {
 
 // SetTTL changes RRSet.ttl.
 // And changes all of RRSet rr ttl.
-func (r *RRSet) SetTTL(ttl uint32) {
+func (r *RRSet) SetTTL(ttl uint32) error {
 	for _, rr := range r.rrs {
 		rr.Header().Ttl = ttl
 	}
 	r.ttl = ttl
+	return nil
 }
 
 // GetRRtype returns rtype
