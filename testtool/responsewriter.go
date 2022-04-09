@@ -13,6 +13,7 @@ type ResponseWriter struct {
 	RemoteAddress net.Addr
 
 	Msg      *dns.Msg
+	Msgs     []*dns.Msg
 	MsgBytes []byte
 
 	ErrWriteMsg   error
@@ -43,6 +44,7 @@ func (w *ResponseWriter) WriteMsg(msg *dns.Msg) error {
 		return w.ErrWriteMsg
 	}
 	w.Msg = msg
+	w.Msgs = append(w.Msgs, msg)
 	return nil
 }
 
