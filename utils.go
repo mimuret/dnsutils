@@ -144,7 +144,7 @@ func GetNameNodeOrCreate(n NameNodeInterface, name string, generator NameNodeGen
 }
 
 // SetNameNode adds NameNode into tree.
-// if not exist parent not, create ENT NameNodeInterface by newFunc.s
+// if not exist parent, create ENT NameNodeInterface by newFunc.s
 // if exist same node, it overrides children and rrests.
 func SetNameNode(n, nn NameNodeInterface, generator NameNodeGenerator) error {
 	if generator == nil {
