@@ -1,0 +1,5 @@
+{
+  "Type": "DNS",
+  "name": "RD",
+  "Arg": 1
+}

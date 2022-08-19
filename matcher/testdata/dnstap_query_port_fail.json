@@ -1,0 +1,5 @@
+{
+  "Type": "DNSTAP",
+  "name": "QueryPort",
+  "Arg": "53"
+}
