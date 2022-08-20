@@ -1,0 +1,5 @@
+{
+  "Type": "DNSTAP",
+  "name": "MessageFamily",
+  "Arg": 2
+}

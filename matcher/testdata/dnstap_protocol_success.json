@@ -1,0 +1,5 @@
+{
+  "Type": "DNSTAP",
+  "name": "MessageProtocol",
+  "Arg": "UDP"
+}
