@@ -40,6 +40,18 @@ var _ = Describe("utils", func() {
 					"example.jp.", "example.jp.", BeTrue(),
 				},
 				{
+					"\x45xample.jp.", "example.jp.", BeTrue(),
+				},
+				{
+					"\x65xample.jp.", "example.jp.", BeTrue(),
+				},
+				{
+					"\105xample.jp.", "example.jp.", BeTrue(),
+				},
+				{
+					"\145xample.jp.", "example.jp.", BeTrue(),
+				},
+				{
 					"example.jp.", "example.jp", BeTrue(),
 				},
 				{
@@ -57,11 +69,83 @@ var _ = Describe("utils", func() {
 				{
 					"example.jp.", "jp.", BeFalse(),
 				},
+				{
+					"..", ".", BeFalse(),
+				},
+				{
+					".", "..", BeFalse(),
+				},
 			}
 			for _, tc := range testcases {
 				res := dnsutils.Equals(tc.A, tc.B)
 				Expect(res).To(tc.res)
 			}
+		})
+	})
+	Context("Test for IsHostname", func() {
+		var (
+			name     string
+			idDomain bool
+			isHost   bool
+		)
+		When("invalid domain name", func() {
+			BeforeEach(func() {
+				name = ".."
+				_, idDomain = dns.IsDomainName(name)
+				isHost = dnsutils.IsHostname(name)
+			})
+			It("returns false", func() {
+				Expect(idDomain).To(BeFalse())
+				Expect(isHost).To(BeFalse())
+			})
+		})
+		When("invalid hostname name", func() {
+			It("returns false", func() {
+				testcase := []string{
+					"_dmarc.example.jp",
+					"a-.example.jp.",
+					"-.example.jp.",
+					"-a.example.jp.",
+					"_.example.jp.",
+					"a_b.example.jp.",
+				}
+				for _, tc := range testcase {
+					_, idDomain = dns.IsDomainName(tc)
+					isHost = dnsutils.IsHostname(tc)
+					Expect(idDomain).To(BeTrue(), tc)
+					Expect(isHost).To(BeFalse(), tc)
+				}
+			})
+		})
+		When("wiledcard name", func() {
+			BeforeEach(func() {
+				name = "*.example.jp"
+				_, idDomain = dns.IsDomainName(name)
+				isHost = dnsutils.IsHostname(name)
+			})
+			It("returns false", func() {
+				Expect(idDomain).To(BeTrue())
+				Expect(isHost).To(BeFalse())
+			})
+		})
+		When("valid hostname name", func() {
+			It("returns true", func() {
+				testcase := []string{
+					"1.example.jp.",
+					"a.example.jp.",
+					"\101.example.jp.",
+					"\x65.example.jp.",
+					"1B.example.jp.",
+					"1-B.example.jp.",
+					"1-C.example.jp.",
+				}
+				for _, tc := range testcase {
+					_, idDomain = dns.IsDomainName(tc)
+					isHost = dnsutils.IsHostname(tc)
+					Expect(idDomain).To(BeTrue(), tc)
+					Expect(isHost).To(BeTrue(), tc)
+				}
+			})
 		})
 	})
 	Context("IsENT", func() {

@@ -1,6 +1,7 @@
 package dnsutils
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strconv"
@@ -41,9 +42,60 @@ func (DefaultGenerator) NewRRSet(name string, ttl uint32, class dns.Class, rrtyp
 	return NewRRSet(name, ttl, class, rrtype, nil)
 }
 
+func isBorderChar(t byte) bool {
+	return (t >= '0' && t <= '9') ||
+		(t >= 'a' && t <= 'z') ||
+		(t >= 'A' && t <= 'Z')
+}
+
+func isMiddleChar(t byte) bool {
+	return isBorderChar(t) || t == '-'
+}
+
+// IsHostname checks if name is a valid RFC1123 hostname.
+func IsHostname(name string) bool {
+	buf := make([]byte, 255)
+	offset, err := dns.PackDomainName(dns.CanonicalName(name), buf, 0, nil, false)
+	if err != nil {
+		// Not domain name
+		return false
+	}
+	var i byte
+	for i < byte(offset) {
+		labelLen := buf[i]
+		i++
+		for j := byte(0); j < labelLen; j++ {
+			if j == 0 || j == labelLen-1 {
+				if !isBorderChar(buf[i+j]) {
+					return false
+				}
+			} else {
+				if !isMiddleChar(buf[i+j]) {
+					return false
+				}
+			}
+		}
+		i += labelLen
+	}
+	return true
+}
+
 // Equals check that both names are equal.
 // Input names can accept non-normalized name.
-func Equals(a, b string) bool { return dns.CanonicalName(a) == dns.CanonicalName(b) }
+func Equals(a, b string) bool {
+	bufa := make([]byte, 255)
+	bufb := make([]byte, 255)
+	_, err := dns.PackDomainName(dns.CanonicalName(a), bufa, 0, nil, false)
+	if err != nil {
+		return false
+	}
+	_, err = dns.PackDomainName(dns.CanonicalName(b), bufb, 0, nil, false)
+	if err != nil {
+		return false
+	}
+
+	return bytes.Equal(bufa, bufb)
+}
 
 // IsENT check that node is empty non terminal.
 func IsENT(n NameNodeInterface) bool {
