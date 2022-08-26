@@ -4,7 +4,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-var (
+const (
 	DNSMatcherAuthoritative = "Authoritative"
 	DNSMatcherAA            = "AA"
 )

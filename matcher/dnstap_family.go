@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
+const (
 	DNSTAPMatcherMessageFamily = "MessageFamily"
 )
 

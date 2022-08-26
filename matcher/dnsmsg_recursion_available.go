@@ -4,7 +4,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-var (
+const (
 	DNSMatcherRecursionAvailable = "RecursionAvailable"
 	DNSMatcherRA                 = "RA"
 )

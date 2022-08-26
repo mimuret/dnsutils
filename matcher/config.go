@@ -12,7 +12,7 @@ func (m MatchOp) Get() MatchOp {
 	return MatchOp(strings.ToUpper(string(m)))
 }
 
-var (
+const (
 	MatchOpAND MatchOp = "AND"
 	MatchOpOR  MatchOp = "OR"
 )
@@ -23,7 +23,7 @@ func (m MatcherType) Get() MatcherType {
 	return MatcherType(strings.ToUpper(string(m)))
 }
 
-var (
+const (
 	MatcherTypeDnstap MatcherType = "DNSTAP"
 	MatcherTypeDnsMsg MatcherType = "DNS"
 )

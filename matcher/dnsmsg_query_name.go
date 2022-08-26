@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
+const (
 	DNSMatcherQName = "QName"
 )
 

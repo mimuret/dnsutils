@@ -6,7 +6,7 @@ import (
 	dnstap "github.com/dnstap/golang-dnstap"
 )
 
-var (
+const (
 	DNSTAPMatcherQueryAddress = "QueryAddress"
 )
 

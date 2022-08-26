@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
+const (
 	DNSTAPMatcherResponsePort = "ResponsePort"
 )
 
