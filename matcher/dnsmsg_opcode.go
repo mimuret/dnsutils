@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	DNSMatcherOpcode = "Opcode"
+const (
+	DNSMatcherOpcode MatcherName = "Opcode"
 )
 
 func NewMatchDNSMsgOpcode(arg interface{}) (DnsMsgMatcher, error) {

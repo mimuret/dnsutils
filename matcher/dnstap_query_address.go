@@ -6,8 +6,8 @@ import (
 	dnstap "github.com/dnstap/golang-dnstap"
 )
 
-var (
-	DNSTAPMatcherQueryAddress = "QueryAddress"
+const (
+	DNSTAPMatcherQueryAddress MatcherName = "QueryAddress"
 )
 
 func NewMatchQueryAddress(arg interface{}) (DnstapMatcher, error) {

@@ -4,9 +4,9 @@ import (
 	"github.com/miekg/dns"
 )
 
-var (
-	DNSMatcherTruncated = "Truncated"
-	DNSMatcherTC        = "TC"
+const (
+	DNSMatcherTruncated MatcherName = "Truncated"
+	DNSMatcherTC        MatcherName = "TC"
 )
 
 func NewMatchDNSMsgTruncated(arg interface{}) (DnsMsgMatcher, error) {

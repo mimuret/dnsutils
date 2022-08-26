@@ -134,7 +134,7 @@ var _ = Describe("Config", func() {
 		})
 		When("op is valid", func() {
 			BeforeEach(func() {
-				c.Op = matcher.MatchOpAND
+				c.Op = "or"
 			})
 			When("matcher config is invalid", func() {
 				When("dnstap matcher config is invalid", func() {
@@ -174,9 +174,10 @@ var _ = Describe("Config", func() {
 						c.Matchers = append(c.Matchers, matcher.MatcherConfig{Type: matcher.MatcherTypeDnstap, Name: "Static", Arg: true})
 						set, err = matcher.BuilderMatchSet(c)
 					})
-					It("returns error", func() {
+					It("returns set", func() {
 						m, _ := matcher.NewMatchDnstapStatic(true)
 						Expect(err).To(Succeed())
+						Expect(set.Op).To(Equal(matcher.SetOpOR))
 						Expect(len(set.DnstapMatchers)).To(Equal(1))
 						Expect(len(set.DnsMsgMatchers)).To(Equal(0))
 						Expect(len(set.SubSets)).To(Equal(0))
@@ -188,9 +189,10 @@ var _ = Describe("Config", func() {
 						c.Matchers = append(c.Matchers, matcher.MatcherConfig{Type: matcher.MatcherTypeDnsMsg, Name: "Static", Arg: true})
 						set, err = matcher.BuilderMatchSet(c)
 					})
-					It("returns error", func() {
+					It("returns set", func() {
 						m, _ := matcher.NewMatchDNSMsgStatic(true)
 						Expect(err).To(Succeed())
+						Expect(set.Op).To(Equal(matcher.SetOpOR))
 						Expect(len(set.DnstapMatchers)).To(Equal(0))
 						Expect(len(set.DnsMsgMatchers)).To(Equal(1))
 						Expect(len(set.SubSets)).To(Equal(0))
@@ -211,11 +213,16 @@ var _ = Describe("Config", func() {
 			When("subset config is valid", func() {
 				BeforeEach(func() {
 					c.SubConfigs = append(c.SubConfigs, matcher.Config{
-						Op: matcher.MatchOpAND,
+						Op: "and",
 						Matchers: []matcher.MatcherConfig{
 							{
-								Type: matcher.MatcherTypeDnsMsg,
-								Name: "Static",
+								Type: "dns",
+								Name: "static",
+								Arg:  true,
+							},
+							{
+								Type: "dnstap",
+								Name: "StaTic",
 								Arg:  true,
 							},
 						},
@@ -224,16 +231,20 @@ var _ = Describe("Config", func() {
 				})
 				It("returns error", func() {
 					Expect(err).To(Succeed())
-					m, _ := matcher.NewMatchDNSMsgStatic(true)
 					Expect(err).To(Succeed())
+					Expect(set.Op).To(Equal(matcher.SetOpOR))
 					Expect(len(set.DnstapMatchers)).To(Equal(0))
 					Expect(len(set.DnsMsgMatchers)).To(Equal(0))
 					Expect(len(set.SubSets)).To(Equal(1))
 					subset := set.SubSets[0]
-					Expect(len(subset.DnstapMatchers)).To(Equal(0))
+					Expect(subset.Op).To(Equal(matcher.SetOpAND))
+					Expect(len(subset.DnstapMatchers)).To(Equal(1))
 					Expect(len(subset.DnsMsgMatchers)).To(Equal(1))
 					Expect(len(subset.SubSets)).To(Equal(0))
-					Expect(subset.DnsMsgMatchers[0]).To(Equal(m))
+					m1, _ := matcher.NewMatchDNSMsgStatic(true)
+					Expect(subset.DnsMsgMatchers[0]).To(Equal(m1))
+					m2, _ := matcher.NewMatchDnstapStatic(true)
+					Expect(subset.DnstapMatchers[0]).To(Equal(m2))
 				})
 			})
 		})

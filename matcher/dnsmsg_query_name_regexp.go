@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	DNSMatcherQNameRegexp = "QNameRegexp"
+const (
+	DNSMatcherQNameRegexp MatcherName = "QNameRegexp"
 )
 
 func NewMatchDNSMsgQueryNameRegexp(arg interface{}) (DnsMsgMatcher, error) {

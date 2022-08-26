@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	DNSTAPMatcherMessageFamily = "MessageFamily"
+const (
+	DNSTAPMatcherMessageFamily MatcherName = "MessageFamily"
 )
 
 func NewMatchMessageFamily(arg interface{}) (DnstapMatcher, error) {

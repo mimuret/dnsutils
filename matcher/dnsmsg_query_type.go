@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	DNSMatcherQType = "QType"
+const (
+	DNSMatcherQType MatcherName = "QType"
 )
 
 func NewMatchDNSMsgQueryType(arg interface{}) (DnsMsgMatcher, error) {

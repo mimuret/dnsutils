@@ -4,9 +4,9 @@ import (
 	"github.com/miekg/dns"
 )
 
-var (
-	DNSMatcherAuthoritative = "Authoritative"
-	DNSMatcherAA            = "AA"
+const (
+	DNSMatcherAuthoritative MatcherName = "Authoritative"
+	DNSMatcherAA            MatcherName = "AA"
 )
 
 func NewMatchDNSMsgAuthoritative(arg interface{}) (DnsMsgMatcher, error) {

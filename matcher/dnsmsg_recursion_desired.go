@@ -4,9 +4,9 @@ import (
 	"github.com/miekg/dns"
 )
 
-var (
-	DNSMatcherRecursionDesired = "RecursionDesired"
-	DNSMatcherRD               = "RD"
+const (
+	DNSMatcherRecursionDesired MatcherName = "RecursionDesired"
+	DNSMatcherRD               MatcherName = "RD"
 )
 
 func NewMatchDNSMsgRecursionDesired(arg interface{}) (DnsMsgMatcher, error) {

@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	DNSTAPMatcherMessageType = "MessageType"
+const (
+	DNSTAPMatcherMessageType MatcherName = "MessageType"
 )
 
 func NewMatchMessageType(arg interface{}) (DnstapMatcher, error) {

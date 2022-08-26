@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	DNSMatcherQClass = "QClass"
+const (
+	DNSMatcherQClass MatcherName = "QClass"
 )
 
 func NewMatchDNSMsgQueryClass(arg interface{}) (DnsMsgMatcher, error) {

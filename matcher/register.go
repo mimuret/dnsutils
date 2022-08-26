@@ -1,30 +1,30 @@
 package matcher
 
 var (
-	dnstapUnmarshaler = map[string]UnmarshalFunc{}
-	newDnstapMatchers = map[string]NewDnstapMatcher{}
-	dnsMsgUnmarshaler = map[string]UnmarshalFunc{}
-	newDnsMsgMatchers = map[string]NewDnsMsgMatcher{}
+	dnstapUnmarshaler = map[MatcherName]UnmarshalFunc{}
+	newDnstapMatchers = map[MatcherName]NewDnstapMatcher{}
+	dnsMsgUnmarshaler = map[MatcherName]UnmarshalFunc{}
+	newDnsMsgMatchers = map[MatcherName]NewDnsMsgMatcher{}
 )
 
-func RegisterDnstapMatcher(name string, newFunc NewDnstapMatcher, unmarshaler UnmarshalFunc) {
+func RegisterDnstapMatcher(name MatcherName, newFunc NewDnstapMatcher, unmarshaler UnmarshalFunc) {
 	if name == "" {
 		panic("name is empty")
 	}
 	if newFunc == nil || unmarshaler == nil {
 		panic("invalid args for RegisterDnstapMacher")
 	}
-	dnstapUnmarshaler[name] = unmarshaler
-	newDnstapMatchers[name] = newFunc
+	dnstapUnmarshaler[name.Get()] = unmarshaler
+	newDnstapMatchers[name.Get()] = newFunc
 }
 
-func RegisterDnsMsgMatcher(name string, newFunc NewDnsMsgMatcher, unmarshaler UnmarshalFunc) {
+func RegisterDnsMsgMatcher(name MatcherName, newFunc NewDnsMsgMatcher, unmarshaler UnmarshalFunc) {
 	if name == "" {
 		panic("name is empty")
 	}
 	if newFunc == nil || unmarshaler == nil {
 		panic("invalid args for RegisterDnsMsgMatcher")
 	}
-	dnsMsgUnmarshaler[name] = unmarshaler
-	newDnsMsgMatchers[name] = newFunc
+	dnsMsgUnmarshaler[name.Get()] = unmarshaler
+	newDnsMsgMatchers[name.Get()] = newFunc
 }

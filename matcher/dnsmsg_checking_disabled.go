@@ -4,9 +4,9 @@ import (
 	"github.com/miekg/dns"
 )
 
-var (
-	DNSMatcherCheckingDisabled = "CheckingDisabled"
-	DNSMatcherCD               = "CD"
+const (
+	DNSMatcherCheckingDisabled MatcherName = "CheckingDisabled"
+	DNSMatcherCD               MatcherName = "CD"
 )
 
 func NewMatchDNSMsgCheckingDisabled(arg interface{}) (DnsMsgMatcher, error) {

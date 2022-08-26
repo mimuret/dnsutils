@@ -3,18 +3,36 @@ package matcher
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 type MatchOp string
 
-var (
+func (m MatchOp) Get() MatchOp {
+	return MatchOp(strings.ToUpper(string(m)))
+}
+
+const (
 	MatchOpAND MatchOp = "AND"
 	MatchOpOR  MatchOp = "OR"
 )
 
 type MatcherType string
 
-var (
+func (m MatcherType) Get() MatcherType {
+	return MatcherType(strings.ToUpper(string(m)))
+}
+func (m MatcherType) Equals(c MatcherType) bool {
+	return m.Get() == c.Get()
+}
+
+type MatcherName string
+
+func (m MatcherName) Get() MatcherName {
+	return MatcherName(strings.ToUpper(string(m)))
+}
+
+const (
 	MatcherTypeDnstap MatcherType = "DNSTAP"
 	MatcherTypeDnsMsg MatcherType = "DNS"
 )
@@ -24,16 +42,17 @@ type Config struct {
 	Matchers   []MatcherConfig
 	SubConfigs []Config
 }
+
 type MatcherConfig struct {
 	Type MatcherType
-	Name string
+	Name MatcherName
 	Arg  interface{}
 }
 
 func (c *MatcherConfig) UnmarshalJSON(bs []byte) error {
 	t := struct {
 		Type MatcherType
-		Name string
+		Name MatcherName
 		Arg  json.RawMessage
 	}{}
 
@@ -43,11 +62,11 @@ func (c *MatcherConfig) UnmarshalJSON(bs []byte) error {
 
 	var unmarshaler UnmarshalFunc
 	var exist bool
-	switch t.Type {
+	switch t.Type.Get() {
 	case MatcherTypeDnstap:
-		unmarshaler, exist = dnstapUnmarshaler[t.Name]
+		unmarshaler, exist = dnstapUnmarshaler[t.Name.Get()]
 	case MatcherTypeDnsMsg:
-		unmarshaler, exist = dnsMsgUnmarshaler[t.Name]
+		unmarshaler, exist = dnsMsgUnmarshaler[t.Name.Get()]
 	default:
 		return fmt.Errorf("unknown matcher type %s", t.Type)
 	}

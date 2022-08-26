@@ -6,8 +6,8 @@ import (
 	dnstap "github.com/dnstap/golang-dnstap"
 )
 
-var (
-	DNSTAPMatcherResponseAddress = "ResponseAddress"
+const (
+	DNSTAPMatcherResponseAddress MatcherName = "ResponseAddress"
 )
 
 func NewMatchResponseAddress(arg interface{}) (DnstapMatcher, error) {

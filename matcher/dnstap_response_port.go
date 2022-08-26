@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	DNSTAPMatcherResponsePort = "ResponsePort"
+const (
+	DNSTAPMatcherResponsePort MatcherName = "ResponsePort"
 )
 
 func NewMatchResponsePort(arg interface{}) (DnstapMatcher, error) {

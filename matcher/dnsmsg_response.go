@@ -4,9 +4,9 @@ import (
 	"github.com/miekg/dns"
 )
 
-var (
-	DNSMatcherResponse = "Response"
-	DNSMatcherQR       = "QR"
+const (
+	DNSMatcherResponse MatcherName = "Response"
+	DNSMatcherQR       MatcherName = "QR"
 )
 
 func NewMatchDNSMsgResponse(arg interface{}) (DnsMsgMatcher, error) {

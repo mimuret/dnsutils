@@ -4,9 +4,9 @@ import (
 	"github.com/miekg/dns"
 )
 
-var (
-	DNSMatcherAuthenticatedData = "AuthenticatedData"
-	DNSMatcherAD                = "AD"
+const (
+	DNSMatcherAuthenticatedData MatcherName = "AuthenticatedData"
+	DNSMatcherAD                MatcherName = "AD"
 )
 
 func NewMatchDNSMsgAuthenticatedData(arg interface{}) (DnsMsgMatcher, error) {

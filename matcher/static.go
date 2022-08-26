@@ -5,7 +5,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-var (
+const (
 	DNSMatcherStatic    = "Static"
 	DNSTAPMatcherStatic = "Static"
 )

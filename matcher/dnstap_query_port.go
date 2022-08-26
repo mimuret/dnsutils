@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	DNSTAPMatcherQueryPort = "QueryPort"
+const (
+	DNSTAPMatcherQueryPort MatcherName = "QueryPort"
 )
 
 func NewMatchQueryPort(arg interface{}) (DnstapMatcher, error) {
