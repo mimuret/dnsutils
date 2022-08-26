@@ -3,9 +3,14 @@ package matcher
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 type MatchOp string
+
+func (m MatchOp) Get() MatchOp {
+	return MatchOp(strings.ToUpper(string(m)))
+}
 
 var (
 	MatchOpAND MatchOp = "AND"
@@ -13,6 +18,10 @@ var (
 )
 
 type MatcherType string
+
+func (m MatcherType) Get() MatcherType {
+	return MatcherType(strings.ToUpper(string(m)))
+}
 
 var (
 	MatcherTypeDnstap MatcherType = "DNSTAP"

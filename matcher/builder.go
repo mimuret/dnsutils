@@ -4,9 +4,10 @@ import "fmt"
 
 func BuilderMatchSet(c *Config) (*MatcherSet, error) {
 	set := NewMatcherSet()
-	if c.Op != MatchOpAND || c.Op == MatchOpOR {
+	if c.Op.Get() != MatchOpAND && c.Op.Get() != MatchOpOR {
 		return nil, fmt.Errorf("unknown op `%s`", c.Op)
 	}
+	set.Op = c.Op.Get()
 	for _, mc := range c.Matchers {
 		switch mc.Type {
 		case MatcherTypeDnstap:

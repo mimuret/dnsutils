@@ -134,7 +134,7 @@ var _ = Describe("Config", func() {
 		})
 		When("op is valid", func() {
 			BeforeEach(func() {
-				c.Op = matcher.MatchOpAND
+				c.Op = "or"
 			})
 			When("matcher config is invalid", func() {
 				When("dnstap matcher config is invalid", func() {
@@ -174,9 +174,10 @@ var _ = Describe("Config", func() {
 						c.Matchers = append(c.Matchers, matcher.MatcherConfig{Type: matcher.MatcherTypeDnstap, Name: "Static", Arg: true})
 						set, err = matcher.BuilderMatchSet(c)
 					})
-					It("returns error", func() {
+					It("returns set", func() {
 						m, _ := matcher.NewMatchDnstapStatic(true)
 						Expect(err).To(Succeed())
+						Expect(set.Op).To(Equal(matcher.MatchOpOR))
 						Expect(len(set.DnstapMatchers)).To(Equal(1))
 						Expect(len(set.DnsMsgMatchers)).To(Equal(0))
 						Expect(len(set.SubSets)).To(Equal(0))
@@ -188,9 +189,10 @@ var _ = Describe("Config", func() {
 						c.Matchers = append(c.Matchers, matcher.MatcherConfig{Type: matcher.MatcherTypeDnsMsg, Name: "Static", Arg: true})
 						set, err = matcher.BuilderMatchSet(c)
 					})
-					It("returns error", func() {
+					It("returns set", func() {
 						m, _ := matcher.NewMatchDNSMsgStatic(true)
 						Expect(err).To(Succeed())
+						Expect(set.Op).To(Equal(matcher.MatchOpOR))
 						Expect(len(set.DnstapMatchers)).To(Equal(0))
 						Expect(len(set.DnsMsgMatchers)).To(Equal(1))
 						Expect(len(set.SubSets)).To(Equal(0))
@@ -226,10 +228,12 @@ var _ = Describe("Config", func() {
 					Expect(err).To(Succeed())
 					m, _ := matcher.NewMatchDNSMsgStatic(true)
 					Expect(err).To(Succeed())
+					Expect(set.Op).To(Equal(matcher.MatchOpOR))
 					Expect(len(set.DnstapMatchers)).To(Equal(0))
 					Expect(len(set.DnsMsgMatchers)).To(Equal(0))
 					Expect(len(set.SubSets)).To(Equal(1))
 					subset := set.SubSets[0]
+					Expect(subset.Op).To(Equal(matcher.MatchOpAND))
 					Expect(len(subset.DnstapMatchers)).To(Equal(0))
 					Expect(len(subset.DnsMsgMatchers)).To(Equal(1))
 					Expect(len(subset.SubSets)).To(Equal(0))
