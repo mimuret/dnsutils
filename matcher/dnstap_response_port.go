@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DNSTAPMatcherResponsePort = "ResponsePort"
+	DNSTAPMatcherResponsePort MatcherName = "ResponsePort"
 )
 
 func NewMatchResponsePort(arg interface{}) (DnstapMatcher, error) {

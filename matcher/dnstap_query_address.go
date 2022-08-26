@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DNSTAPMatcherQueryAddress = "QueryAddress"
+	DNSTAPMatcherQueryAddress MatcherName = "QueryAddress"
 )
 
 func NewMatchQueryAddress(arg interface{}) (DnstapMatcher, error) {

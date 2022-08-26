@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DNSMatcherQName = "QName"
+	DNSMatcherQName MatcherName = "QName"
 )
 
 func NewMatchDNSMsgQueryName(arg interface{}) (DnsMsgMatcher, error) {

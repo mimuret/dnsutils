@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	DNSMatcherCheckingDisabled = "CheckingDisabled"
-	DNSMatcherCD               = "CD"
+	DNSMatcherCheckingDisabled MatcherName = "CheckingDisabled"
+	DNSMatcherCD               MatcherName = "CD"
 )
 
 func NewMatchDNSMsgCheckingDisabled(arg interface{}) (DnsMsgMatcher, error) {

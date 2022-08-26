@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DNSMatcherQNameRegexp = "QNameRegexp"
+	DNSMatcherQNameRegexp MatcherName = "QNameRegexp"
 )
 
 func NewMatchDNSMsgQueryNameRegexp(arg interface{}) (DnsMsgMatcher, error) {

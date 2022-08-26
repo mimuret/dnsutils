@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DNSMatcherQType = "QType"
+	DNSMatcherQType MatcherName = "QType"
 )
 
 func NewMatchDNSMsgQueryType(arg interface{}) (DnsMsgMatcher, error) {

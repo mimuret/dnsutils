@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	DNSMatcherAuthenticatedData = "AuthenticatedData"
-	DNSMatcherAD                = "AD"
+	DNSMatcherAuthenticatedData MatcherName = "AuthenticatedData"
+	DNSMatcherAD                MatcherName = "AD"
 )
 
 func NewMatchDNSMsgAuthenticatedData(arg interface{}) (DnsMsgMatcher, error) {

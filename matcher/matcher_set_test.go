@@ -36,7 +36,7 @@ var _ = Describe("MatcherSet", func() {
 			})
 			When("OpCode is AND", func() {
 				BeforeEach(func() {
-					m.Op = matcher.MatchOpAND
+					m.Op = matcher.SetOpAND
 				})
 				When("DnstapMatchers, DnsMsgMatchers and SubSets are empty", func() {
 					It("returns true", func() {
@@ -63,7 +63,7 @@ var _ = Describe("MatcherSet", func() {
 		})
 		When("OpCode is AND", func() {
 			BeforeEach(func() {
-				m.Op = matcher.MatchOpAND
+				m.Op = matcher.SetOpAND
 			})
 			When("DnstapMatchers is empty", func() {
 				When("SubSets is empty", func() {
@@ -158,7 +158,7 @@ var _ = Describe("MatcherSet", func() {
 		})
 		When("OpCode is OR", func() {
 			BeforeEach(func() {
-				m.Op = matcher.MatchOpOR
+				m.Op = matcher.SetOpOR
 			})
 			When("DnstapMatchers is empty", func() {
 				When("SubSets is empty", func() {
@@ -255,7 +255,7 @@ var _ = Describe("MatcherSet", func() {
 	Context("MatchDnsMsg", func() {
 		When("OpCode is AND", func() {
 			BeforeEach(func() {
-				m.Op = matcher.MatchOpAND
+				m.Op = matcher.SetOpAND
 			})
 			When("DnsMsgMatchers is empty", func() {
 				When("SubSets is empty", func() {
@@ -350,7 +350,7 @@ var _ = Describe("MatcherSet", func() {
 		})
 		When("OpCode is OR", func() {
 			BeforeEach(func() {
-				m.Op = matcher.MatchOpOR
+				m.Op = matcher.SetOpOR
 			})
 			When("DnsMsgMatchers is empty", func() {
 				When("SubSets is empty", func() {
@@ -731,7 +731,7 @@ var _ = Describe("MatcherSet", func() {
 		})
 		When("OpCode is OR", func() {
 			BeforeEach(func() {
-				m.Op = matcher.MatchOpOR
+				m.Op = matcher.SetOpOR
 			})
 			When("DnsMsgMatchers is empty", func() {
 				When("DnstapMatchers is empty", func() {

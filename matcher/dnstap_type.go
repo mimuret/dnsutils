@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DNSTAPMatcherMessageType = "MessageType"
+	DNSTAPMatcherMessageType MatcherName = "MessageType"
 )
 
 func NewMatchMessageType(arg interface{}) (DnstapMatcher, error) {

@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	DNSMatcherResponse = "Response"
-	DNSMatcherQR       = "QR"
+	DNSMatcherResponse MatcherName = "Response"
+	DNSMatcherQR       MatcherName = "QR"
 )
 
 func NewMatchDNSMsgResponse(arg interface{}) (DnsMsgMatcher, error) {

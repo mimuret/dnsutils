@@ -177,7 +177,7 @@ var _ = Describe("Config", func() {
 					It("returns set", func() {
 						m, _ := matcher.NewMatchDnstapStatic(true)
 						Expect(err).To(Succeed())
-						Expect(set.Op).To(Equal(matcher.MatchOpOR))
+						Expect(set.Op).To(Equal(matcher.SetOpOR))
 						Expect(len(set.DnstapMatchers)).To(Equal(1))
 						Expect(len(set.DnsMsgMatchers)).To(Equal(0))
 						Expect(len(set.SubSets)).To(Equal(0))
@@ -192,7 +192,7 @@ var _ = Describe("Config", func() {
 					It("returns set", func() {
 						m, _ := matcher.NewMatchDNSMsgStatic(true)
 						Expect(err).To(Succeed())
-						Expect(set.Op).To(Equal(matcher.MatchOpOR))
+						Expect(set.Op).To(Equal(matcher.SetOpOR))
 						Expect(len(set.DnstapMatchers)).To(Equal(0))
 						Expect(len(set.DnsMsgMatchers)).To(Equal(1))
 						Expect(len(set.SubSets)).To(Equal(0))
@@ -213,11 +213,16 @@ var _ = Describe("Config", func() {
 			When("subset config is valid", func() {
 				BeforeEach(func() {
 					c.SubConfigs = append(c.SubConfigs, matcher.Config{
-						Op: matcher.MatchOpAND,
+						Op: "and",
 						Matchers: []matcher.MatcherConfig{
 							{
-								Type: matcher.MatcherTypeDnsMsg,
-								Name: "Static",
+								Type: "dns",
+								Name: "static",
+								Arg:  true,
+							},
+							{
+								Type: "dnstap",
+								Name: "StaTic",
 								Arg:  true,
 							},
 						},
@@ -226,18 +231,20 @@ var _ = Describe("Config", func() {
 				})
 				It("returns error", func() {
 					Expect(err).To(Succeed())
-					m, _ := matcher.NewMatchDNSMsgStatic(true)
 					Expect(err).To(Succeed())
-					Expect(set.Op).To(Equal(matcher.MatchOpOR))
+					Expect(set.Op).To(Equal(matcher.SetOpOR))
 					Expect(len(set.DnstapMatchers)).To(Equal(0))
 					Expect(len(set.DnsMsgMatchers)).To(Equal(0))
 					Expect(len(set.SubSets)).To(Equal(1))
 					subset := set.SubSets[0]
-					Expect(subset.Op).To(Equal(matcher.MatchOpAND))
-					Expect(len(subset.DnstapMatchers)).To(Equal(0))
+					Expect(subset.Op).To(Equal(matcher.SetOpAND))
+					Expect(len(subset.DnstapMatchers)).To(Equal(1))
 					Expect(len(subset.DnsMsgMatchers)).To(Equal(1))
 					Expect(len(subset.SubSets)).To(Equal(0))
-					Expect(subset.DnsMsgMatchers[0]).To(Equal(m))
+					m1, _ := matcher.NewMatchDNSMsgStatic(true)
+					Expect(subset.DnsMsgMatchers[0]).To(Equal(m1))
+					m2, _ := matcher.NewMatchDnstapStatic(true)
+					Expect(subset.DnstapMatchers[0]).To(Equal(m2))
 				})
 			})
 		})

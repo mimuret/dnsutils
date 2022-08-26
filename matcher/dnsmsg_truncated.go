@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	DNSMatcherTruncated = "Truncated"
-	DNSMatcherTC        = "TC"
+	DNSMatcherTruncated MatcherName = "Truncated"
+	DNSMatcherTC        MatcherName = "TC"
 )
 
 func NewMatchDNSMsgTruncated(arg interface{}) (DnsMsgMatcher, error) {

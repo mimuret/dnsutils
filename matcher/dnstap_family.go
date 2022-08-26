@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DNSTAPMatcherMessageFamily = "MessageFamily"
+	DNSTAPMatcherMessageFamily MatcherName = "MessageFamily"
 )
 
 func NewMatchMessageFamily(arg interface{}) (DnstapMatcher, error) {

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DNSMatcherRcode = "Rcode"
+	DNSMatcherRcode MatcherName = "Rcode"
 )
 
 func NewMatchDNSMsgRcode(arg interface{}) (DnsMsgMatcher, error) {

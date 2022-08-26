@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DNSMatcherOpcode = "Opcode"
+	DNSMatcherOpcode MatcherName = "Opcode"
 )
 
 func NewMatchDNSMsgOpcode(arg interface{}) (DnsMsgMatcher, error) {

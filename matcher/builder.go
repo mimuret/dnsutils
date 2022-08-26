@@ -4,12 +4,16 @@ import "fmt"
 
 func BuilderMatchSet(c *Config) (*MatcherSet, error) {
 	set := NewMatcherSet()
-	if c.Op.Get() != MatchOpAND && c.Op.Get() != MatchOpOR {
+	switch c.Op.Get() {
+	case MatchOpAND:
+		set.Op = SetOpAND
+	case MatchOpOR:
+		set.Op = SetOpOR
+	default:
 		return nil, fmt.Errorf("unknown op `%s`", c.Op)
 	}
-	set.Op = c.Op.Get()
 	for _, mc := range c.Matchers {
-		switch mc.Type {
+		switch mc.Type.Get() {
 		case MatcherTypeDnstap:
 			m, err := BuildDnstapMatcher(mc)
 			if err != nil {
@@ -37,10 +41,10 @@ func BuilderMatchSet(c *Config) (*MatcherSet, error) {
 }
 
 func BuildDnstapMatcher(mc MatcherConfig) (DnstapMatcher, error) {
-	if mc.Type != MatcherTypeDnstap {
+	if !mc.Type.Equals(MatcherTypeDnstap) {
 		return nil, fmt.Errorf("matcher config Type is not DNSTAP: `%s`", mc.Type)
 	}
-	newFunc, exist := newDnstapMatchers[mc.Name]
+	newFunc, exist := newDnstapMatchers[mc.Name.Get()]
 	if !exist {
 		return nil, fmt.Errorf("matcher config Type: DNSTAP, Matcher Name: %s is not found", mc.Name)
 	}
@@ -48,10 +52,10 @@ func BuildDnstapMatcher(mc MatcherConfig) (DnstapMatcher, error) {
 }
 
 func BuildDnsMsgMatcher(mc MatcherConfig) (DnsMsgMatcher, error) {
-	if mc.Type != MatcherTypeDnsMsg {
+	if !mc.Type.Equals(MatcherTypeDnsMsg) {
 		return nil, fmt.Errorf("matcher config Type is not DNS: `%s`", mc.Type)
 	}
-	newFunc, exist := newDnsMsgMatchers[mc.Name]
+	newFunc, exist := newDnsMsgMatchers[mc.Name.Get()]
 	if !exist {
 		return nil, fmt.Errorf("matcher config Type: DNS, Matcher Name: %s is not found", mc.Name)
 	}

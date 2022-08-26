@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DNSMatcherQClass = "QClass"
+	DNSMatcherQClass MatcherName = "QClass"
 )
 
 func NewMatchDNSMsgQueryClass(arg interface{}) (DnsMsgMatcher, error) {

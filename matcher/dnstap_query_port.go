@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DNSTAPMatcherQueryPort = "QueryPort"
+	DNSTAPMatcherQueryPort MatcherName = "QueryPort"
 )
 
 func NewMatchQueryPort(arg interface{}) (DnstapMatcher, error) {

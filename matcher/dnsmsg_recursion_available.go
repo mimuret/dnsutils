@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	DNSMatcherRecursionAvailable = "RecursionAvailable"
-	DNSMatcherRA                 = "RA"
+	DNSMatcherRecursionAvailable MatcherName = "RecursionAvailable"
+	DNSMatcherRA                 MatcherName = "RA"
 )
 
 func NewMatchDNSMsgRecursionAvailable(arg interface{}) (DnsMsgMatcher, error) {

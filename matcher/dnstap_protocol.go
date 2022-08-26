@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DNSTAPMatcherMessageProtocol = "MessageProtocol"
+	DNSTAPMatcherMessageProtocol MatcherName = "MessageProtocol"
 )
 
 func NewMatchMessageProtocol(arg interface{}) (DnstapMatcher, error) {

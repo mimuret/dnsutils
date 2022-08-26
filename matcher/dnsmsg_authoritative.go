@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	DNSMatcherAuthoritative = "Authoritative"
-	DNSMatcherAA            = "AA"
+	DNSMatcherAuthoritative MatcherName = "Authoritative"
+	DNSMatcherAA            MatcherName = "AA"
 )
 
 func NewMatchDNSMsgAuthoritative(arg interface{}) (DnsMsgMatcher, error) {

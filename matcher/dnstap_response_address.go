@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DNSTAPMatcherResponseAddress = "ResponseAddress"
+	DNSTAPMatcherResponseAddress MatcherName = "ResponseAddress"
 )
 
 func NewMatchResponseAddress(arg interface{}) (DnstapMatcher, error) {
