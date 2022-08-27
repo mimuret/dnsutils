@@ -12,11 +12,12 @@ import (
 var _ = Describe("SocketFamily", func() {
 	Context("GetSocketFamilyString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnstapStrFunc("MessageFamily")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetSocketFamilyString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -25,7 +26,7 @@ var _ = Describe("SocketFamily", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetSocketFamilyString(m)
+				s = strFunc(m)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -36,7 +37,7 @@ var _ = Describe("SocketFamily", func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
 					SocketFamily: dnstap.SocketFamily_INET6.Enum(),
 				}}
-				s = getter.GetSocketFamilyString(m)
+				s = strFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal(dnstap.SocketFamily_INET6.String()))
@@ -45,11 +46,12 @@ var _ = Describe("SocketFamily", func() {
 	})
 	Context("GetSocketFamily", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnstapGetFunc("SocketFamily")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetSocketFamily(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -58,7 +60,7 @@ var _ = Describe("SocketFamily", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetSocketFamily(m)
+				s = getFunc(m)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -69,7 +71,7 @@ var _ = Describe("SocketFamily", func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
 					SocketFamily: dnstap.SocketFamily_INET6.Enum(),
 				}}
-				s = getter.GetSocketFamily(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal(dnstap.SocketFamily_INET6))

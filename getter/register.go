@@ -58,3 +58,16 @@ func RegisterDnsMsgGetFunc(name DnsMsgGetterName, getFunc DnsMsgGetFunc, strFunc
 	dnsMsgGetter[name.Get()] = getFunc
 	dnsMsgStrGetter[name.Get()] = strFunc
 }
+
+func NewDnstapGetFunc(name DnstapGetterName) DnstapGetFunc {
+	return dnstapGetter[name.Get()]
+}
+func NewDnstapStrFunc(name DnstapGetterName) DnstapStrFunc {
+	return dnstapStrGetter[name.Get()]
+}
+func NewDnsMsgGetFunc(name DnsMsgGetterName) DnsMsgGetFunc {
+	return dnsMsgGetter[name.Get()]
+}
+func NewDnsMsgStrFunc(name DnsMsgGetterName) DnsMsgStrFunc {
+	return dnsMsgStrGetter[name.Get()]
+}

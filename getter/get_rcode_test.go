@@ -12,11 +12,12 @@ import (
 var _ = Describe("Rcode", func() {
 	Context("GetRcodeString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnsMsgStrFunc("Rcode")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetRcodeString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -25,7 +26,7 @@ var _ = Describe("Rcode", func() {
 		When("opcode is unknown", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: 255}}
-				s = getter.GetRcodeString(m)
+				s = strFunc(m)
 			})
 			It("returns OPCODE*", func() {
 				Expect(s).To(Equal("RCODE255"))
@@ -34,7 +35,7 @@ var _ = Describe("Rcode", func() {
 		When("opcode is known", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure}}
-				s = getter.GetRcodeString(m)
+				s = strFunc(m)
 			})
 			It("returns SERVFAIL", func() {
 				Expect(s).To(Equal("SERVFAIL"))
@@ -43,11 +44,12 @@ var _ = Describe("Rcode", func() {
 	})
 	Context("GetRcode", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnsMsgGetFunc("Rcode")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetRcode(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -56,7 +58,7 @@ var _ = Describe("Rcode", func() {
 		When("msg is not nil", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure}}
-				s = getter.GetRcode(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal(dns.RcodeServerFailure))

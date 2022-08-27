@@ -10,13 +10,14 @@ import (
 )
 
 var _ = Describe("SocketProtocol", func() {
-	Context("GetSocketProtocolString", func() {
+	Context("GetMessageTypeString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnstapStrFunc("MessageType")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetSocketProtocolString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -25,7 +26,7 @@ var _ = Describe("SocketProtocol", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetSocketProtocolString(m)
+				s = strFunc(m)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -34,22 +35,23 @@ var _ = Describe("SocketProtocol", func() {
 		When("valid message", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
-					SocketProtocol: dnstap.SocketProtocol_DOT.Enum(),
+					Type: dnstap.Message_AUTH_QUERY.Enum(),
 				}}
-				s = getter.GetSocketProtocolString(m)
+				s = strFunc(m)
 			})
 			It("returns value", func() {
-				Expect(s).To(Equal(dnstap.SocketProtocol_DOT.String()))
+				Expect(s).To(Equal(dnstap.Message_AUTH_QUERY.String()))
 			})
 		})
 	})
-	Context("GetSocketProtocol", func() {
+	Context("GetMessageType", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnstapGetFunc("MessageType")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetSocketProtocol(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -58,7 +60,7 @@ var _ = Describe("SocketProtocol", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetSocketProtocol(m)
+				s = getFunc(m)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -67,12 +69,12 @@ var _ = Describe("SocketProtocol", func() {
 		When("valid message", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
-					SocketProtocol: dnstap.SocketProtocol_DOH.Enum(),
+					Type: dnstap.Message_AUTH_QUERY.Enum(),
 				}}
-				s = getter.GetSocketProtocol(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
-				Expect(s).To(Equal(dnstap.SocketProtocol_DOH))
+				Expect(s).To(Equal(dnstap.Message_AUTH_QUERY))
 			})
 		})
 	})

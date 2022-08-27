@@ -12,11 +12,12 @@ import (
 var _ = Describe("Truncated", func() {
 	Context("GetTruncatedString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnsMsgStrFunc("TC")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetTruncatedString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -25,7 +26,7 @@ var _ = Describe("Truncated", func() {
 		When("ad bit is on", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Truncated: true}}
-				s = getter.GetTruncatedString(m)
+				s = strFunc(m)
 			})
 			It("returns on", func() {
 				Expect(s).To(Equal(getter.MatchStringOn))
@@ -34,7 +35,7 @@ var _ = Describe("Truncated", func() {
 		When("ad bit is off", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Truncated: false}}
-				s = getter.GetTruncatedString(m)
+				s = strFunc(m)
 			})
 			It("returns off", func() {
 				Expect(s).To(Equal(getter.MatchStringOff))
@@ -43,11 +44,12 @@ var _ = Describe("Truncated", func() {
 	})
 	Context("GetTruncated", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnsMsgGetFunc("Truncated")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetTruncated(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -56,7 +58,7 @@ var _ = Describe("Truncated", func() {
 		When("ad bit is on", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Truncated: true}}
-				s = getter.GetTruncated(m)
+				s = getFunc(m)
 			})
 			It("returns true", func() {
 				Expect(s).To(BeTrue())
@@ -65,7 +67,7 @@ var _ = Describe("Truncated", func() {
 		When("ad bit is off", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Truncated: false}}
-				s = getter.GetTruncated(m)
+				s = getFunc(m)
 			})
 			It("returns false", func() {
 				Expect(s).To(BeFalse())

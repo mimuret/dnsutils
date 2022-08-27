@@ -12,11 +12,12 @@ import (
 var _ = Describe("AuthenticatedData", func() {
 	Context("GetAuthenticatedDataString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnsMsgStrFunc("AD")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetAuthenticatedDataString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -25,7 +26,7 @@ var _ = Describe("AuthenticatedData", func() {
 		When("ad bit is on", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{AuthenticatedData: true}}
-				s = getter.GetAuthenticatedDataString(m)
+				s = strFunc(m)
 			})
 			It("returns on", func() {
 				Expect(s).To(Equal(getter.MatchStringOn))
@@ -34,7 +35,7 @@ var _ = Describe("AuthenticatedData", func() {
 		When("ad bit is off", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{AuthenticatedData: false}}
-				s = getter.GetAuthenticatedDataString(m)
+				s = strFunc(m)
 			})
 			It("returns off", func() {
 				Expect(s).To(Equal(getter.MatchStringOff))
@@ -43,11 +44,12 @@ var _ = Describe("AuthenticatedData", func() {
 	})
 	Context("GetAuthenticatedData", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnsMsgGetFunc("AuthenticatedData")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetAuthenticatedData(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -56,7 +58,7 @@ var _ = Describe("AuthenticatedData", func() {
 		When("ad bit is on", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{AuthenticatedData: true}}
-				s = getter.GetAuthenticatedData(m)
+				s = getFunc(m)
 			})
 			It("returns true", func() {
 				Expect(s).To(BeTrue())
@@ -65,7 +67,7 @@ var _ = Describe("AuthenticatedData", func() {
 		When("ad bit is off", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{AuthenticatedData: false}}
-				s = getter.GetAuthenticatedData(m)
+				s = getFunc(m)
 			})
 			It("returns false", func() {
 				Expect(s).To(BeFalse())

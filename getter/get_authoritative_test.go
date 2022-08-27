@@ -12,11 +12,12 @@ import (
 var _ = Describe("Authoritative", func() {
 	Context("GetAuthoritativeString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnsMsgStrFunc("AA")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetAuthoritativeString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -25,7 +26,7 @@ var _ = Describe("Authoritative", func() {
 		When("ad bit is on", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Authoritative: true}}
-				s = getter.GetAuthoritativeString(m)
+				s = strFunc(m)
 			})
 			It("returns on", func() {
 				Expect(s).To(Equal(getter.MatchStringOn))
@@ -34,7 +35,7 @@ var _ = Describe("Authoritative", func() {
 		When("ad bit is off", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Authoritative: false}}
-				s = getter.GetAuthoritativeString(m)
+				s = strFunc(m)
 			})
 			It("returns off", func() {
 				Expect(s).To(Equal(getter.MatchStringOff))
@@ -43,11 +44,12 @@ var _ = Describe("Authoritative", func() {
 	})
 	Context("GetAuthoritative", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnsMsgGetFunc("Authoritative")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetAuthoritative(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -56,7 +58,7 @@ var _ = Describe("Authoritative", func() {
 		When("ad bit is on", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Authoritative: true}}
-				s = getter.GetAuthoritative(m)
+				s = getFunc(m)
 			})
 			It("returns true", func() {
 				Expect(s).To(BeTrue())
@@ -65,7 +67,7 @@ var _ = Describe("Authoritative", func() {
 		When("ad bit is off", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{Authoritative: false}}
-				s = getter.GetAuthoritative(m)
+				s = getFunc(m)
 			})
 			It("returns false", func() {
 				Expect(s).To(BeFalse())
