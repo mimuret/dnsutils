@@ -23,12 +23,22 @@ var _ = Describe("QName", func() {
 			err error
 		)
 		When("arg is string", func() {
-			BeforeEach(func() {
-				m, err = matcher.NewMatchDNSMsgQueryName("exmaple.jp")
+			When("valid domain name", func() {
+				BeforeEach(func() {
+					m, err = matcher.NewMatchDNSMsgQueryName("exmaple.jp")
+				})
+				It("returns matcher", func() {
+					Expect(err).To(Succeed())
+					Expect(m).NotTo(BeNil())
+				})
 			})
-			It("returns matcher", func() {
-				Expect(err).To(Succeed())
-				Expect(m).NotTo(BeNil())
+			When("invalid domain name", func() {
+				BeforeEach(func() {
+					m, err = matcher.NewMatchDNSMsgQueryName("..")
+				})
+				It("returns error", func() {
+					Expect(err).To(HaveOccurred())
+				})
 			})
 		})
 		When("arg is invalid type", func() {
@@ -65,7 +75,7 @@ var _ = Describe("QName", func() {
 			BeforeEach(func() {
 				err = json.Unmarshal(matchDNSMsgQueryNameFailData, mc)
 			})
-			It("not returns error", func() {
+			It("returns error", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -99,24 +109,40 @@ var _ = Describe("QName", func() {
 			err error
 			m   matcher.DnsMsgMatcher
 		)
-		When("match true", func() {
-			BeforeEach(func() {
-				m, err = matcher.NewMatchDNSMsgQueryName("exmaple.jp")
-				Expect(err).To(Succeed())
+		BeforeEach(func() {
+			m, err = matcher.NewMatchDNSMsgQueryName("exmaple.jp.")
+			Expect(err).To(Succeed())
+		})
+		When("msg.Question is empty ", func() {
+			It("returns false", func() {
+				Expect(m.Match(&dns.Msg{})).To(BeFalse())
 			})
-			When("msg.Question is empty ", func() {
+		})
+		When("msg.Question is not domain name ", func() {
+			It("returns false", func() {
+				Expect(m.Match(&dns.Msg{Question: []dns.Question{
+					{
+						Name:   "..",
+						Qtype:  dns.TypeA,
+						Qclass: dns.ClassCHAOS,
+					},
+				}})).To(BeFalse())
+			})
+		})
+		When("msg.QueryName != TARGET", func() {
+			It("returns false", func() {
+				Expect(m.Match(&dns.Msg{Question: []dns.Question{{Name: "exmaple.net"}}})).To(BeFalse())
+			})
+		})
+		When("msg.QueryName = TARGET", func() {
+			When("different case", func() {
 				It("returns true", func() {
-					Expect(m.Match(&dns.Msg{})).To(BeFalse())
+					Expect(m.Match(&dns.Msg{Question: []dns.Question{{Name: "ExmapLe.jp."}}})).To(BeTrue())
 				})
 			})
-			When("msg.QueryName = TARGET", func() {
+			When("not FQDN", func() {
 				It("returns true", func() {
-					Expect(m.Match(&dns.Msg{Question: []dns.Question{{Name: "exmaple.jp"}}})).To(BeTrue())
-				})
-			})
-			When("msg.QueryName != TARGET", func() {
-				It("returns false", func() {
-					Expect(m.Match(&dns.Msg{Question: []dns.Question{{Name: "exmaple.net"}}})).To(BeFalse())
+					Expect(m.Match(&dns.Msg{Question: []dns.Question{{Name: "ExmapLe.jp"}}})).To(BeTrue())
 				})
 			})
 		})
