@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/miekg/dns"
+	"github.com/mimuret/intcast"
+	"golang.org/x/exp/constraints"
 )
 
 var (
@@ -304,42 +306,49 @@ func MakeRR(r RRSetInterface, rdata string) (dns.RR, error) {
 // ConvertStringToType returns uint16 dns rrtype by string
 // If it failed to parse, returns ErrInvalid
 func ConvertStringToType(s string) (uint16, error) {
-	return convertStringToUint16(dns.StringToType, "TYPE", s)
+	return ConvertToStringToNumber(dns.StringToType, "TYPE", s)
 }
 
 // ConvertStringToClass returns dns.Class by string
 // If it failed to parse, returns ErrInvalid
 func ConvertStringToClass(s string) (dns.Class, error) {
-	class, err := convertStringToUint16(dns.StringToClass, "CLASS", s)
+	class, err := ConvertToStringToNumber(dns.StringToClass, "CLASS", s)
 	return dns.Class(class), err
 }
 
-func convertStringToUint16(def map[string]uint16, prefix, s string) (uint16, error) {
-	if t, ok := def[s]; ok {
+func ConvertToStringToNumber[T constraints.Integer](def map[string]T, prefix, s string) (T, error) {
+	var (
+		t  T
+		ok bool
+	)
+	if t, ok = def[s]; ok {
 		return t, nil
 	}
 	if strings.HasPrefix(s, prefix) {
 		v := strings.TrimLeft(s, prefix)
-		res, err := strconv.ParseUint(v, 10, 16)
+		res, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			return 0, ErrInvalid
 		}
-		return uint16(res), nil
+		if err := intcast.Cast(res, &t); err != nil {
+			return 0, ErrInvalid
+		}
+		return t, nil
 	}
 	return 0, ErrInvalid
 }
 
 // ConvertTypeToString returns RRType string by uint16 dns rrtype.
 func ConvertTypeToString(i uint16) string {
-	return convertUint16ToString(dns.TypeToString, "TYPE", i)
+	return ConvertNumberToString(dns.TypeToString, "TYPE", i)
 }
 
 // ConvertClassToString returns DNS Class string by dns.Class
 func ConvertClassToString(i dns.Class) string {
-	return convertUint16ToString(dns.ClassToString, "CLASS", uint16(i))
+	return ConvertNumberToString(dns.ClassToString, "CLASS", uint16(i))
 }
 
-func convertUint16ToString(def map[uint16]string, prefix string, i uint16) string {
+func ConvertNumberToString[T constraints.Integer](def map[T]string, prefix string, i T) string {
 	if s, ok := def[i]; ok {
 		return s
 	}
