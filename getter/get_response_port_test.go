@@ -12,11 +12,12 @@ import (
 var _ = Describe("ResponsePort", func() {
 	Context("GetResponsePortString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnstapStrFunc("ResponsePort")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetResponsePortString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -25,7 +26,7 @@ var _ = Describe("ResponsePort", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetResponsePortString(m)
+				s = strFunc(m)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -37,7 +38,7 @@ var _ = Describe("ResponsePort", func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
 					ResponsePort: &p,
 				}}
-				s = getter.GetResponsePortString(m)
+				s = strFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal("10053"))
@@ -46,11 +47,12 @@ var _ = Describe("ResponsePort", func() {
 	})
 	Context("GetResponsePort", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnstapGetFunc("ResponsePort")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetResponsePort(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -59,7 +61,7 @@ var _ = Describe("ResponsePort", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetResponsePort(m)
+				s = getFunc(m)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -71,7 +73,7 @@ var _ = Describe("ResponsePort", func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
 					ResponsePort: &p,
 				}}
-				s = getter.GetResponsePort(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal(uint32(10053)))

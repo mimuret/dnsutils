@@ -12,11 +12,12 @@ import (
 var _ = Describe("RecursionAvailable", func() {
 	Context("GetRecursionAvailableString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnsMsgStrFunc("RA")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetRecursionAvailableString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -25,7 +26,7 @@ var _ = Describe("RecursionAvailable", func() {
 		When("ad bit is on", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{RecursionAvailable: true}}
-				s = getter.GetRecursionAvailableString(m)
+				s = strFunc(m)
 			})
 			It("returns on", func() {
 				Expect(s).To(Equal(getter.MatchStringOn))
@@ -34,7 +35,7 @@ var _ = Describe("RecursionAvailable", func() {
 		When("ad bit is off", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{RecursionAvailable: false}}
-				s = getter.GetRecursionAvailableString(m)
+				s = strFunc(m)
 			})
 			It("returns off", func() {
 				Expect(s).To(Equal(getter.MatchStringOff))
@@ -43,11 +44,12 @@ var _ = Describe("RecursionAvailable", func() {
 	})
 	Context("GetRecursionAvailable", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnsMsgGetFunc("RecursionAvailable")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetRecursionAvailable(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -56,7 +58,7 @@ var _ = Describe("RecursionAvailable", func() {
 		When("ad bit is on", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{RecursionAvailable: true}}
-				s = getter.GetRecursionAvailable(m)
+				s = getFunc(m)
 			})
 			It("returns true", func() {
 				Expect(s).To(BeTrue())
@@ -65,7 +67,7 @@ var _ = Describe("RecursionAvailable", func() {
 		When("ad bit is off", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{MsgHdr: dns.MsgHdr{RecursionAvailable: false}}
-				s = getter.GetRecursionAvailable(m)
+				s = getFunc(m)
 			})
 			It("returns false", func() {
 				Expect(s).To(BeFalse())

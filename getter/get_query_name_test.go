@@ -12,11 +12,12 @@ import (
 var _ = Describe("QName", func() {
 	Context("GetQNameString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnsMsgStrFunc("Qname")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQNameString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -24,7 +25,7 @@ var _ = Describe("QName", func() {
 		})
 		When("question is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQNameString(&dns.Msg{})
+				s = strFunc(&dns.Msg{})
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -33,7 +34,7 @@ var _ = Describe("QName", func() {
 		When("valid msg", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{Question: []dns.Question{{Name: "WwW.example.jp"}}}
-				s = getter.GetQNameString(m)
+				s = strFunc(m)
 			})
 			It("returns qname", func() {
 				Expect(s).To(Equal("WwW.example.jp"))
@@ -42,11 +43,12 @@ var _ = Describe("QName", func() {
 	})
 	Context("GetQName", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnsMsgGetFunc("QName")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQName(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -54,7 +56,7 @@ var _ = Describe("QName", func() {
 		})
 		When("question is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQName(&dns.Msg{})
+				s = getFunc(&dns.Msg{})
 			})
 			It("returns unknown", func() {
 				Expect(s).To(BeNil())
@@ -63,7 +65,7 @@ var _ = Describe("QName", func() {
 		When("msg is not nil", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{Question: []dns.Question{{Name: "WwW.example.jp"}}}
-				s = getter.GetQName(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal("WwW.example.jp"))

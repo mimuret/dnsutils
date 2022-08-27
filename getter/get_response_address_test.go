@@ -13,11 +13,12 @@ import (
 var _ = Describe("ResponseAddress", func() {
 	Context("GetResponseAddressString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnstapStrFunc("ResponseAddress")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetResponseAddressString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -26,7 +27,7 @@ var _ = Describe("ResponseAddress", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetResponseAddressString(m)
+				s = strFunc(m)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -35,7 +36,7 @@ var _ = Describe("ResponseAddress", func() {
 		When("ResponseAddress is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{}}
-				s = getter.GetResponseAddressString(m)
+				s = strFunc(m)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -46,7 +47,7 @@ var _ = Describe("ResponseAddress", func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
 					ResponseAddress: net.IPv4(127, 0, 0, 1),
 				}}
-				s = getter.GetResponseAddressString(m)
+				s = strFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal("127.0.0.1"))
@@ -55,11 +56,12 @@ var _ = Describe("ResponseAddress", func() {
 	})
 	Context("GetResponseAddress", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnstapGetFunc("ResponseAddress")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetResponseAddress(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -68,7 +70,7 @@ var _ = Describe("ResponseAddress", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetResponseAddress(m)
+				s = getFunc(m)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -79,7 +81,7 @@ var _ = Describe("ResponseAddress", func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
 					ResponseAddress: net.IPv4(127, 0, 0, 1),
 				}}
-				s = getter.GetResponseAddress(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal([]byte(net.IPv4(127, 0, 0, 1))))

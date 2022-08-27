@@ -9,14 +9,15 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("MessageType", func() {
-	Context("GetMessageTypeString", func() {
+var _ = Describe("SocketProtocol", func() {
+	Context("GetSocketProtocolString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnstapStrFunc("MessageProtocol")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetMessageTypeString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -25,7 +26,7 @@ var _ = Describe("MessageType", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetMessageTypeString(m)
+				s = strFunc(m)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -34,22 +35,23 @@ var _ = Describe("MessageType", func() {
 		When("valid message", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
-					Type: dnstap.Message_AUTH_QUERY.Enum(),
+					SocketProtocol: dnstap.SocketProtocol_DOT.Enum(),
 				}}
-				s = getter.GetMessageTypeString(m)
+				s = strFunc(m)
 			})
 			It("returns value", func() {
-				Expect(s).To(Equal(dnstap.Message_AUTH_QUERY.String()))
+				Expect(s).To(Equal(dnstap.SocketProtocol_DOT.String()))
 			})
 		})
 	})
-	Context("GetMessageType", func() {
+	Context("GetSocketProtocol", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnstapGetFunc("SocketProtocol")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetMessageType(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -58,7 +60,7 @@ var _ = Describe("MessageType", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetMessageType(m)
+				s = getFunc(m)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -67,12 +69,12 @@ var _ = Describe("MessageType", func() {
 		When("valid message", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
-					Type: dnstap.Message_AUTH_QUERY.Enum(),
+					SocketProtocol: dnstap.SocketProtocol_DOH.Enum(),
 				}}
-				s = getter.GetMessageType(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
-				Expect(s).To(Equal(dnstap.Message_AUTH_QUERY))
+				Expect(s).To(Equal(dnstap.SocketProtocol_DOH))
 			})
 		})
 	})

@@ -13,11 +13,12 @@ import (
 var _ = Describe("QueryAddress", func() {
 	Context("GetQueryAddressString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnstapStrFunc("QueryAddress")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQueryAddressString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -26,7 +27,7 @@ var _ = Describe("QueryAddress", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetQueryAddressString(m)
+				s = strFunc(m)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -35,7 +36,7 @@ var _ = Describe("QueryAddress", func() {
 		When("QueryAddress is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{}}
-				s = getter.GetQueryAddressString(m)
+				s = strFunc(m)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -46,7 +47,7 @@ var _ = Describe("QueryAddress", func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
 					QueryAddress: net.IPv4(127, 0, 0, 1),
 				}}
-				s = getter.GetQueryAddressString(m)
+				s = strFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal("127.0.0.1"))
@@ -55,11 +56,12 @@ var _ = Describe("QueryAddress", func() {
 	})
 	Context("GetQueryAddress", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnstapGetFunc("QueryAddress")
 		)
 		When("dnstap is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQueryAddress(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -68,7 +70,7 @@ var _ = Describe("QueryAddress", func() {
 		When("message is nil", func() {
 			BeforeEach(func() {
 				m := &dnstap.Dnstap{}
-				s = getter.GetQueryAddress(m)
+				s = getFunc(m)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -79,7 +81,7 @@ var _ = Describe("QueryAddress", func() {
 				m := &dnstap.Dnstap{Message: &dnstap.Message{
 					QueryAddress: net.IPv4(127, 0, 0, 1),
 				}}
-				s = getter.GetQueryAddress(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal([]byte(net.IPv4(127, 0, 0, 1))))

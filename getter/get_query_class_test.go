@@ -12,11 +12,12 @@ import (
 var _ = Describe("QClass", func() {
 	Context("GetQClassString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnsMsgStrFunc("QClass")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQClassString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -24,7 +25,7 @@ var _ = Describe("QClass", func() {
 		})
 		When("question is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQClassString(&dns.Msg{})
+				s = strFunc(&dns.Msg{})
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -35,7 +36,7 @@ var _ = Describe("QClass", func() {
 				m := &dns.Msg{Question: []dns.Question{
 					{Qclass: 253},
 				}}
-				s = getter.GetQClassString(m)
+				s = strFunc(m)
 			})
 			It("returns CLASS*", func() {
 				Expect(s).To(Equal("CLASS253"))
@@ -46,7 +47,7 @@ var _ = Describe("QClass", func() {
 				m := &dns.Msg{Question: []dns.Question{
 					{Qclass: dns.ClassANY},
 				}}
-				s = getter.GetQClassString(m)
+				s = strFunc(m)
 			})
 			It("returns ANY", func() {
 				Expect(s).To(Equal("ANY"))
@@ -55,11 +56,12 @@ var _ = Describe("QClass", func() {
 	})
 	Context("GetQClass", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnsMsgGetFunc("QClass")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQClass(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -67,7 +69,7 @@ var _ = Describe("QClass", func() {
 		})
 		When("question is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQClass(&dns.Msg{})
+				s = getFunc(&dns.Msg{})
 			})
 			It("returns unknown", func() {
 				Expect(s).To(BeNil())
@@ -78,7 +80,7 @@ var _ = Describe("QClass", func() {
 				m := &dns.Msg{Question: []dns.Question{
 					{Qclass: 253},
 				}}
-				s = getter.GetQClass(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal(uint16(253)))

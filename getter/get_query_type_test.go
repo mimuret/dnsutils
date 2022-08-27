@@ -12,11 +12,12 @@ import (
 var _ = Describe("QType", func() {
 	Context("GetQTypeString", func() {
 		var (
-			s string
+			s       string
+			strFunc = getter.NewDnsMsgStrFunc("QType")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQTypeString(nil)
+				s = strFunc(nil)
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -24,7 +25,7 @@ var _ = Describe("QType", func() {
 		})
 		When("question is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQTypeString(&dns.Msg{})
+				s = strFunc(&dns.Msg{})
 			})
 			It("returns unknown", func() {
 				Expect(s).To(Equal(getter.MatchStringUnknown))
@@ -33,7 +34,7 @@ var _ = Describe("QType", func() {
 		When("opcode is unknown", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{Question: []dns.Question{{Qtype: 65534}}}
-				s = getter.GetQTypeString(m)
+				s = strFunc(m)
 			})
 			It("returns TYPE*", func() {
 				Expect(s).To(Equal("TYPE65534"))
@@ -42,7 +43,7 @@ var _ = Describe("QType", func() {
 		When("opcode is known", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{Question: []dns.Question{{Qtype: dns.TypeHTTPS}}}
-				s = getter.GetQTypeString(m)
+				s = strFunc(m)
 			})
 			It("returns HTTPS", func() {
 				Expect(s).To(Equal("HTTPS"))
@@ -51,11 +52,12 @@ var _ = Describe("QType", func() {
 	})
 	Context("GetQType", func() {
 		var (
-			s interface{}
+			s       interface{}
+			getFunc = getter.NewDnsMsgGetFunc("QType")
 		)
 		When("msg is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQType(nil)
+				s = getFunc(nil)
 			})
 			It("returns nil", func() {
 				Expect(s).To(BeNil())
@@ -63,7 +65,7 @@ var _ = Describe("QType", func() {
 		})
 		When("question is nil", func() {
 			BeforeEach(func() {
-				s = getter.GetQType(&dns.Msg{})
+				s = getFunc(&dns.Msg{})
 			})
 			It("returns unknown", func() {
 				Expect(s).To(BeNil())
@@ -72,7 +74,7 @@ var _ = Describe("QType", func() {
 		When("msg is not nil", func() {
 			BeforeEach(func() {
 				m := &dns.Msg{Question: []dns.Question{{Qtype: 65534}}}
-				s = getter.GetQType(m)
+				s = getFunc(m)
 			})
 			It("returns value", func() {
 				Expect(s).To(Equal(uint16(65534)))
