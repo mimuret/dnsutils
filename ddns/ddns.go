@@ -81,15 +81,15 @@ func (d *DDNS) ServeUpdate(zone dnsutils.ZoneInterface, r *dns.Msg) (int, error)
 }
 
 /*
-   3.1.2 - Pseudocode For Zone Section Processing
+3.1.2 - Pseudocode For Zone Section Processing
 
-      if (zcount != 1 || ztype != SOA)
-           return (FORMERR)
-      if (zone_type(zname, zclass) == SLAVE)
-           return forward()
-      if (zone_type(zname, zclass) == MASTER)
-           return update()
-      return (NOTAUTH)
+	if (zcount != 1 || ztype != SOA)
+	     return (FORMERR)
+	if (zone_type(zname, zclass) == SLAVE)
+	     return forward()
+	if (zone_type(zname, zclass) == MASTER)
+	     return update()
+	return (NOTAUTH)
 */
 func (d *DDNS) CheckZoneSection(z dnsutils.ZoneInterface, msg *dns.Msg) int {
 	if len(msg.Question) != 1 {
@@ -105,39 +105,39 @@ func (d *DDNS) CheckZoneSection(z dnsutils.ZoneInterface, msg *dns.Msg) int {
 }
 
 /*
-   3.2.5 - Pseudocode for Prerequisite Section Processing
+3.2.5 - Pseudocode for Prerequisite Section Processing
 
-      for rr in prerequisites
-           if (rr.ttl != 0)
-                return (FORMERR)
-           if (zone_of(rr.name) != ZNAME)
-                return (NOTZONE);
-           if (rr.class == ANY)
-                if (rr.rdlength != 0)
-                     return (FORMERR)
-                if (rr.type == ANY)
-                     if (!zone_name<rr.name>)
-                          return (NXDOMAIN)
-                else
-                     if (!zone_rrset<rr.name, rr.type>)
-                          return (NXRRSET)
-           if (rr.class == NONE)
-                if (rr.rdlength != 0)
-                     return (FORMERR)
-                if (rr.type == ANY)
-                     if (zone_name<rr.name>)
-                          return (YXDOMAIN)
-                else
-                     if (zone_rrset<rr.name, rr.type>)
-                          return (YXRRSET)
-           if (rr.class == zclass)
-                temp<rr.name, rr.type> += rr
-           else
-                return (FORMERR)
+	for rr in prerequisites
+	     if (rr.ttl != 0)
+	          return (FORMERR)
+	     if (zone_of(rr.name) != ZNAME)
+	          return (NOTZONE);
+	     if (rr.class == ANY)
+	          if (rr.rdlength != 0)
+	               return (FORMERR)
+	          if (rr.type == ANY)
+	               if (!zone_name<rr.name>)
+	                    return (NXDOMAIN)
+	          else
+	               if (!zone_rrset<rr.name, rr.type>)
+	                    return (NXRRSET)
+	     if (rr.class == NONE)
+	          if (rr.rdlength != 0)
+	               return (FORMERR)
+	          if (rr.type == ANY)
+	               if (zone_name<rr.name>)
+	                    return (YXDOMAIN)
+	          else
+	               if (zone_rrset<rr.name, rr.type>)
+	                    return (YXRRSET)
+	     if (rr.class == zclass)
+	          temp<rr.name, rr.type> += rr
+	     else
+	          return (FORMERR)
 
-      for rrset in temp
-           if (zone_rrset<rrset.name, rrset.type> != rrset)
-                return (NXRRSET)
+	for rrset in temp
+	     if (zone_rrset<rrset.name, rrset.type> != rrset)
+	          return (NXRRSET)
 */
 func (d *DDNS) PrerequisiteProessing(z dnsutils.ZoneInterface, msg *dns.Msg) int {
 	tempNode, _ := dnsutils.NewNameNode(z.GetName(), z.GetClass())
@@ -364,23 +364,31 @@ func (d *DDNS) UpdateProcessing(z dnsutils.ZoneInterface, m *dns.Msg) error {
 }
 
 /*
-   if (rr.type == CNAME)
-        if (zone_rrset<rr.name, ~CNAME>)
-             next [rr]
-   elsif (zone_rrset<rr.name, CNAME>)
-        next [rr]
-   if (rr.type == SOA)
-        if (!zone_rrset<rr.name, SOA> ||
-            zone_rr<rr.name, SOA>.serial > rr.soa.serial)
-             next [rr]
-   for zrr in zone_rrset<rr.name, rr.type>
-        if (rr.type == CNAME || rr.type == SOA ||
-            (rr.type == WKS && rr.proto == zrr.proto &&
-             rr.address == zrr.address) ||
-            rr.rdata == zrr.rdata)
-             zrr = rr
-             next [rr]
-   zone_rrset<rr.name, rr.type> += rr
+if (rr.type == CNAME)
+
+	if (zone_rrset<rr.name, ~CNAME>)
+	     next [rr]
+
+elsif (zone_rrset<rr.name, CNAME>)
+
+	next [rr]
+
+if (rr.type == SOA)
+
+	if (!zone_rrset<rr.name, SOA> ||
+	    zone_rr<rr.name, SOA>.serial > rr.soa.serial)
+	     next [rr]
+
+for zrr in zone_rrset<rr.name, rr.type>
+
+	if (rr.type == CNAME || rr.type == SOA ||
+	    (rr.type == WKS && rr.proto == zrr.proto &&
+	     rr.address == zrr.address) ||
+	    rr.rdata == zrr.rdata)
+	     zrr = rr
+	     next [rr]
+
+zone_rrset<rr.name, rr.type> += rr
 */
 func (d *DDNS) UpdateAdd(z dnsutils.ZoneInterface, rr dns.RR) error {
 	var set dnsutils.RRSetInterface
