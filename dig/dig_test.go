@@ -36,14 +36,14 @@ var _ = Describe("dig package", func() {
 		svc            *dns.Server
 		startCh, endCh chan struct{}
 		m              *dns.Msg
-		opts           []dig.Options
+		opts           []dig.Option
 	)
 	BeforeEach(func() {
 		startCh = make(chan struct{})
 		endCh = make(chan struct{})
 		h := &handler{RR: testtool.MustNewRR("www.example.jp. IN 300 A 192.168.0.1")}
 		svc = &dns.Server{Addr: "127.0.0.1:20053", Net: "udp", Handler: h, NotifyStartedFunc: func() { close(startCh) }}
-		opts = []dig.Options{&dig.OptionTarget{Target: "127.0.0.1:20053"}}
+		opts = []dig.Option{&dig.OptionTarget{Target: "127.0.0.1:20053"}}
 		m = new(dns.Msg)
 		m.SetQuestion("www.example.jp.", dns.TypeA)
 	})
@@ -137,7 +137,7 @@ var _ = Describe("dig package", func() {
 	})
 	Context("HTTP", func() {
 		BeforeEach(func() {
-			opts = []dig.Options{&dig.OptionTarget{Target: "https://public.dns.iij.jp/dns-query"}}
+			opts = []dig.Option{&dig.OptionTarget{Target: "https://public.dns.iij.jp/dns-query"}}
 			msg, err = dig.HTTPS(m, opts...)
 		})
 		It("returns msg", func() {

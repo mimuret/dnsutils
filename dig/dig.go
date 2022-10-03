@@ -36,6 +36,12 @@ func init() {
 	}
 }
 
+type ResolvInterface interface {
+	Exchange(*dns.Msg, ...Option) (*dns.Msg, error)
+}
+
+var _ ResolvInterface = &Dig{}
+
 type Dig struct {
 	Client     *dns.Client
 	HTTPClient *http.Client
@@ -53,7 +59,7 @@ func NewDig() *Dig {
 	return r
 }
 
-type Options interface {
+type Option interface {
 	Option(*Dig) error
 }
 
@@ -84,33 +90,33 @@ func (o *OptionTLSConfig) Option(c *Dig) error {
 	return nil
 }
 
-func Simple(name string, qtype uint16, options ...Options) (*dns.Msg, error) {
+func Simple(name string, qtype uint16, options ...Option) (*dns.Msg, error) {
 	m := &dns.Msg{}
 	m.SetQuestion(name, qtype)
 	return UDP(m, options...)
 }
 
-func UDP(m *dns.Msg, options ...Options) (*dns.Msg, error) {
+func UDP(m *dns.Msg, options ...Option) (*dns.Msg, error) {
 	options = append(options, &OptionNet{Net: "udp"})
 	return NewDig().Exchange(m, options...)
 }
 
-func TCP(m *dns.Msg, options ...Options) (*dns.Msg, error) {
+func TCP(m *dns.Msg, options ...Option) (*dns.Msg, error) {
 	options = append(options, &OptionNet{Net: "tcp"})
 	return NewDig().Exchange(m, options...)
 }
 
-func TLS(m *dns.Msg, options ...Options) (*dns.Msg, error) {
+func TLS(m *dns.Msg, options ...Option) (*dns.Msg, error) {
 	options = append(options, &OptionNet{Net: "tcp-tls"})
 	return NewDig().Exchange(m, options...)
 }
 
-func HTTPS(m *dns.Msg, options ...Options) (*dns.Msg, error) {
+func HTTPS(m *dns.Msg, options ...Option) (*dns.Msg, error) {
 	options = append(options, &OptionNet{Net: "http-post"})
 	return NewDig().Exchange(m, options...)
 }
 
-func (d *Dig) Exchange(m *dns.Msg, options ...Options) (*dns.Msg, error) {
+func (d *Dig) Exchange(m *dns.Msg, options ...Option) (*dns.Msg, error) {
 	for _, opt := range options {
 		opt.Option(d)
 	}
