@@ -2,6 +2,7 @@ package dig
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
@@ -38,6 +39,7 @@ func init() {
 
 type ResolvInterface interface {
 	Exchange(*dns.Msg, ...Option) (*dns.Msg, error)
+	ExchangeContext(context.Context, *dns.Msg, ...Option) (*dns.Msg, error)
 }
 
 var _ ResolvInterface = &Dig{}
@@ -117,21 +119,26 @@ func HTTPS(m *dns.Msg, options ...Option) (*dns.Msg, error) {
 }
 
 func (d *Dig) Exchange(m *dns.Msg, options ...Option) (*dns.Msg, error) {
+	return d.ExchangeContext(context.Background(), m, options...)
+}
+
+func (d *Dig) ExchangeContext(ctx context.Context, m *dns.Msg, options ...Option) (*dns.Msg, error) {
 	for _, opt := range options {
 		opt.Option(d)
 	}
 	if strings.HasPrefix(d.Client.Net, "http") {
-		return d.dialHTTP(m)
+		return d.dialHTTP(ctx, m)
 	}
-	r, _, err := d.Client.Exchange(m, d.Target)
+	r, _, err := d.Client.ExchangeContext(ctx, m, d.Target)
 	return r, err
 }
 
-func (d *Dig) dialHTTP(m *dns.Msg) (*dns.Msg, error) {
-	req, err := d.getRequest(m)
+func (d *Dig) dialHTTP(ctx context.Context, m *dns.Msg) (*dns.Msg, error) {
+	req, err := d.getRequest(ctx, m)
 	if err != nil {
 		return nil, err
 	}
+
 	res, err := d.HTTPClient.Do(req)
 	if err != nil {
 		return nil, ErrRequest
@@ -154,7 +161,7 @@ func (d *Dig) dialHTTP(m *dns.Msg) (*dns.Msg, error) {
 	return r, nil
 }
 
-func (d *Dig) getRequest(m *dns.Msg) (*http.Request, error) {
+func (d *Dig) getRequest(ctx context.Context, m *dns.Msg) (*http.Request, error) {
 	var (
 		req *http.Request
 	)
@@ -182,5 +189,5 @@ func (d *Dig) getRequest(m *dns.Msg) (*http.Request, error) {
 		}
 		req.Header.Add("content-type", ContentType)
 	}
-	return req, nil
+	return req.WithContext(ctx), nil
 }
