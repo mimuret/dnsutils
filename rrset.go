@@ -131,7 +131,7 @@ func (r *RRSet) AddRR(rr dns.RR) error {
 	if rr.Header().Rrtype != r.rrtype {
 		return ErrRRTypeNotEqual
 	}
-	if rr.Header().Ttl != r.ttl {
+	if rr.Header().Rrtype != dns.TypeRRSIG && rr.Header().Ttl != r.ttl {
 		return ErrTTLNotEqual
 	}
 	if rr.Header().Class != uint16(r.class) {
