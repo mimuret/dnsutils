@@ -134,9 +134,19 @@ var _ = Describe("RRSet", func() {
 			})
 		})
 		When("ttl ignore", func() {
-			It("return err", func() {
-				a2 := MustNewRR("example.jp. 100 IN A 192.168.0.2")
-				Expect(rrset.AddRR(a2)).NotTo(BeNil())
+			When("rrtype is not RRSIG", func() {
+				It("return err", func() {
+					a2 := MustNewRR("example.jp. 100 IN A 192.168.0.2")
+					Expect(rrset.AddRR(a2)).NotTo(BeNil())
+				})
+			})
+			When("rrtype is RRSIG", func() {
+				It("succeed", func() {
+					rrsig1 := MustNewRR("example.jp. 100 IN RRSIG	SOA 8 1 86400 20221114174503 20221015174503 16131 jp. bnrvm7F4QbM3ZvFfBzQRb9H8ENaBI9UQl/KDwo8NgsRBNbR97ug3nEHm Cpf2rCKislPJXOeBwSixY7eSQ2ggqns3WWviHBz/ooOhWPIwiSfCScYl Xd5AeD+x4vygJbxYLalqUZnr4IyCGYwpmeMM7BpR2gMx/AwfLF7cqRU8 qQw=")
+					rrsig2 := MustNewRR("example.jp. 300 IN RRSIG	NS 8 1 86400 20221114174503 20221015174503 16131 jp. bnrvm7F4QbM3ZvFfBzQRb9H8ENaBI9UQl/KDwo8NgsRBNbR97ug3nEHm Cpf2rCKislPJXOeBwSixY7eSQ2ggqns3WWviHBz/ooOhWPIwiSfCScYl Xd5AeD+x4vygJbxYLalqUZnr4IyCGYwpmeMM7BpR2gMx/AwfLF7cqRU8 qQw=")
+					rrset := dnsutils.NewRRSetFromRR(rrsig1)
+					Expect(rrset.AddRR(rrsig2)).To(Succeed())
+				})
 			})
 		})
 		When("class ignore", func() {
