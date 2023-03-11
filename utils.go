@@ -354,3 +354,17 @@ func ConvertNumberToString[T constraints.Integer](def map[T]string, prefix strin
 	}
 	return prefix + strconv.FormatUint(uint64(i), 10)
 }
+
+// GetAllParentNames returns a name slice containing parent names and itself.
+func GetAllParentNames(name string, level uint) ([]string, bool) {
+	_, ok := dns.IsDomainName(name)
+	if !ok {
+		return nil, false
+	}
+	names := []string{}
+	labels := dns.SplitDomainName(name)
+	for i := len(labels) - int(level) - 1; i >= 0; i-- {
+		names = append(names, dns.CanonicalName(strings.Join(labels[i:], ".")))
+	}
+	return names, true
+}

@@ -722,5 +722,66 @@ var _ = Describe("utils", func() {
 			})
 		})
 	})
+	Context("Test GetAllParentNames", func() {
+		var (
+			names []string
+			ok    bool
+		)
+		When("valid names", func() {
+			When("level is 0", func() {
+				BeforeEach(func() {
+					names, ok = dnsutils.GetAllParentNames("3.example.jp", 0)
+				})
+				It("returns true", func() {
+					Expect(ok).To(BeTrue())
+					Expect(names).To(Equal([]string{
+						"jp.",
+						"example.jp.",
+						"3.example.jp.",
+					}))
+				})
+			})
+			When("level is 1", func() {
+				BeforeEach(func() {
+					names, ok = dnsutils.GetAllParentNames("3.example.jp", 1)
+				})
+				It("returns true", func() {
+					Expect(ok).To(BeTrue())
+					Expect(names).To(Equal([]string{
+						"example.jp.",
+						"3.example.jp.",
+					}))
+				})
+			})
+			When("level is 2", func() {
+				BeforeEach(func() {
+					names, ok = dnsutils.GetAllParentNames("3.example.jp", 2)
+				})
+				It("returns true", func() {
+					Expect(ok).To(BeTrue())
+					Expect(names).To(Equal([]string{
+						"3.example.jp.",
+					}))
+				})
+			})
+			When("level is 3", func() {
+				BeforeEach(func() {
+					names, ok = dnsutils.GetAllParentNames("3.example.jp", 3)
+				})
+				It("returns true", func() {
+					Expect(ok).To(BeTrue())
+					Expect(names).To(Equal([]string{}))
+				})
+			})
+		})
+		When("invalid domain name", func() {
+			BeforeEach(func() {
+				names, ok = dnsutils.GetAllParentNames(".example.jp", 0)
+			})
+			It("returns false", func() {
+				Expect(ok).To(BeFalse())
+			})
+		})
+	})
 
 })

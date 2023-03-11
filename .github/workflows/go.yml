@@ -10,12 +10,12 @@ jobs:
   go-versions:
     runs-on: ubuntu-latest
     outputs:
-      versions: ${{ steps.versions.outputs.value }}
+      versions: ${{ steps.versions.outputs.versions }}
     steps:
       - id: versions
         run: |
-          versions=$(curl -s 'https://go.dev/dl/?mode=json' | jq -c 'map(.version[2:])')
-          echo "::set-output name=value::${versions}"
+          versions=$(curl -s 'https://go.dev/dl/?mode=json' | jq -c 'map(.version[0:])' | sed 's/go//g')
+          echo "versions=${versions}" >> ${GITHUB_OUTPUT}
   test:
     needs: go-versions
     runs-on: ubuntu-latest
@@ -24,13 +24,13 @@ jobs:
       matrix:
         go-version: ${{fromJson(needs.go-versions.outputs.versions)}}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go-version }}
     - name: Test
       run: go test -race -coverprofile="coverage.txt" -covermode=atomic ./...
     - name: upload coverage
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
