@@ -14,7 +14,7 @@ jobs:
     steps:
       - id: versions
         run: |
-          versions=$(curl -s 'https://go.dev/dl/?mode=json' | jq -c 'map(.version[2:])')
+          versions=$(curl -s 'https://go.dev/dl/?mode=json' | jq -c 'map(.version[0:])')
           echo "::set-output name=value::${versions}"
   test:
     needs: go-versions
