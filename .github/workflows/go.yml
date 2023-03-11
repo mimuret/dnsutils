@@ -24,13 +24,13 @@ jobs:
       matrix:
         go-version: ${{fromJson(needs.go-versions.outputs.versions)}}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions/setup-go@v4
       with:
         go-version: ${{ matrix.go-version }}
     - name: Test
       run: go test -race -coverprofile="coverage.txt" -covermode=atomic ./...
     - name: upload coverage
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
