@@ -10,12 +10,12 @@ jobs:
   go-versions:
     runs-on: ubuntu-latest
     outputs:
-      versions: ${{ steps.versions.outputs.value }}
+      versions: ${{ steps.versions.outputs.versions }}
     steps:
       - id: versions
         run: |
-          versions=$(curl -s 'https://go.dev/dl/?mode=json' | jq -c 'map(.version[0:])')
-          echo "::set-output name=value::${versions}"
+          versions=$(curl -s 'https://go.dev/dl/?mode=json' | jq -c 'map(.version[0:])' | sed 's/go//g')
+          echo "versions=${versions}" >> ${GITHUB_OUTPUT}
   test:
     needs: go-versions
     runs-on: ubuntu-latest
