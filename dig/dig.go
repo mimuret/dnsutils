@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/miekg/dns"
 )
@@ -122,43 +123,51 @@ func (d *Dig) Exchange(m *dns.Msg, options ...Option) (*dns.Msg, error) {
 	return d.ExchangeContext(context.Background(), m, options...)
 }
 
+func (d *Dig) ExchangeWithRTT(m *dns.Msg, options ...Option) (*dns.Msg, time.Duration, error) {
+	return d.ExchangeContextWithRTT(context.Background(), m, options...)
+}
+
 func (d *Dig) ExchangeContext(ctx context.Context, m *dns.Msg, options ...Option) (*dns.Msg, error) {
+	r, _, err := d.ExchangeContextWithRTT(ctx, m, options...)
+	return r, err
+}
+
+func (d *Dig) ExchangeContextWithRTT(ctx context.Context, m *dns.Msg, options ...Option) (*dns.Msg, time.Duration, error) {
 	for _, opt := range options {
 		opt.Option(d)
 	}
 	if strings.HasPrefix(d.Client.Net, "http") {
 		return d.dialHTTP(ctx, m)
 	}
-	r, _, err := d.Client.ExchangeContext(ctx, m, d.Target)
-	return r, err
+	return d.Client.ExchangeContext(ctx, m, d.Target)
 }
 
-func (d *Dig) dialHTTP(ctx context.Context, m *dns.Msg) (*dns.Msg, error) {
+func (d *Dig) dialHTTP(ctx context.Context, m *dns.Msg) (*dns.Msg, time.Duration, error) {
 	req, err := d.getRequest(ctx, m)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
+	t := time.Now()
 	res, err := d.HTTPClient.Do(req)
 	if err != nil {
-		return nil, ErrRequest
+		return nil, time.Since(t), ErrRequest
 	}
 	defer res.Body.Close()
 	if res.Header.Get("Content-Type") != ContentType {
-		return nil, ErrUnsupportedContentType
+		return nil, time.Since(t), ErrUnsupportedContentType
 	}
 	raw, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, ErrReadBody
+		return nil, time.Since(t), ErrReadBody
 	}
 	if res.StatusCode != 200 {
-		return nil, ErrNotOK
+		return nil, time.Since(t), ErrNotOK
 	}
 	r := &dns.Msg{}
 	if err := r.Unpack(raw); err != nil {
-		return nil, ErrParseMsg
+		return nil, time.Since(t), ErrParseMsg
 	}
-	return r, nil
+	return r, time.Since(t), nil
 }
 
 func (d *Dig) getRequest(ctx context.Context, m *dns.Msg) (*http.Request, error) {
