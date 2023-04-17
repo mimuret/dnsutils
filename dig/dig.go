@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -150,22 +151,22 @@ func (d *Dig) dialHTTP(ctx context.Context, m *dns.Msg) (*dns.Msg, time.Duration
 	t := time.Now()
 	res, err := d.HTTPClient.Do(req)
 	if err != nil {
-		return nil, time.Since(t), ErrRequest
+		return nil, time.Since(t), errors.Join(ErrRequest, err)
 	}
 	defer res.Body.Close()
 	if res.Header.Get("Content-Type") != ContentType {
-		return nil, time.Since(t), ErrUnsupportedContentType
+		return nil, time.Since(t), errors.Join(ErrUnsupportedContentType, err)
 	}
 	raw, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, time.Since(t), ErrReadBody
+		return nil, time.Since(t), errors.Join(ErrReadBody, err)
 	}
 	if res.StatusCode != 200 {
-		return nil, time.Since(t), ErrNotOK
+		return nil, time.Since(t), errors.Join(ErrNotOK, err)
 	}
 	r := &dns.Msg{}
 	if err := r.Unpack(raw); err != nil {
-		return nil, time.Since(t), ErrParseMsg
+		return nil, time.Since(t), errors.Join(ErrParseMsg, err)
 	}
 	return r, time.Since(t), nil
 }
@@ -176,11 +177,11 @@ func (d *Dig) getRequest(ctx context.Context, m *dns.Msg) (*http.Request, error)
 	)
 	raw, err := m.Pack()
 	if err != nil {
-		return nil, ErrPackMsg
+		return nil, errors.Join(ErrPackMsg, err)
 	}
 	url, err := url.Parse(d.Target)
 	if err != nil {
-		return nil, ErrParseTarget
+		return nil, errors.Join(ErrParseTarget, err)
 	}
 	if d.Client.Net == "http-get" {
 		dnsb64param := base64.RawURLEncoding.EncodeToString(raw)
@@ -189,12 +190,12 @@ func (d *Dig) getRequest(ctx context.Context, m *dns.Msg) (*http.Request, error)
 		url.RawQuery = q.Encode()
 		req, err = http.NewRequest(http.MethodGet, url.String(), nil)
 		if err != nil {
-			return nil, ErrCreateRequest
+			return nil, errors.Join(ErrCreateRequest, err)
 		}
 	} else {
 		req, err = http.NewRequest(http.MethodPost, url.String(), bytes.NewReader(raw))
 		if err != nil {
-			return nil, ErrCreateRequest
+			return nil, errors.Join(ErrCreateRequest, err)
 		}
 		req.Header.Add("content-type", ContentType)
 	}
