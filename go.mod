@@ -10,6 +10,7 @@ require (
 	github.com/onsi/gomega v1.14.0
 	github.com/pkg/errors v0.9.1
 	golang.org/x/exp v0.0.0-20220826205824-bd9bcdd0b820
+	golang.org/x/net v0.9.0
 )
 
 require (
@@ -18,7 +19,6 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
