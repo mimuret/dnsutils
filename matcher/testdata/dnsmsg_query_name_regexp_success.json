@@ -1,5 +1,5 @@
 {
   "Type": "DNS",
-  "name": "QNameRegexp",
+  "Name": "QNameRegexp",
   "Arg": ".*"
 }

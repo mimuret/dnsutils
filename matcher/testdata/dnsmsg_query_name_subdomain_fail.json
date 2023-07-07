@@ -1,0 +1,5 @@
+{
+  "Type": "DNS",
+  "Name": "QNameSubDomain",
+  "Arg": false
+}
