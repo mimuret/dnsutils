@@ -4,6 +4,7 @@ import "fmt"
 
 func BuilderMatchSet(c *Config) (*MatcherSet, error) {
 	set := NewMatcherSet()
+	set.Inverse = c.Inverse
 	switch c.Op.Get() {
 	case MatchOpAND:
 		set.Op = SetOpAND

@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -33,7 +34,7 @@ func init() {
 	cfg, err := dns.ClientConfigFromFile("/etc/resolv.conf")
 	if err == nil {
 		for _, addr := range cfg.Servers {
-			DefaultResolvers = append(DefaultResolvers, addr+":53")
+			DefaultResolvers = append(DefaultResolvers, net.JoinHostPort(addr, "53"))
 		}
 	}
 }

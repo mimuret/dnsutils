@@ -30,9 +30,9 @@ var _ = Describe("MatcherSet", func() {
 		falseSubset.DnsMsgMatchers = append(falseSubset.DnsMsgMatchers, staticFalseDnsMsgMatcher)
 	})
 	Context("MatchDnstap", func() {
-		When("invalid is true", func() {
+		When("Inverse is true", func() {
 			BeforeEach(func() {
-				m.Invalid = true
+				m.Inverse = true
 			})
 			When("OpCode is AND", func() {
 				BeforeEach(func() {

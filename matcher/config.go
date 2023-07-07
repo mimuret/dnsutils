@@ -39,6 +39,7 @@ const (
 
 type Config struct {
 	Op         MatchOp
+	Inverse    bool
 	Matchers   []MatcherConfig
 	SubConfigs []Config
 }

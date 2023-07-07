@@ -14,7 +14,7 @@ var (
 
 type MatcherSet struct {
 	Op             SetOp
-	Invalid        bool
+	Inverse        bool
 	DnstapMatchers []DnstapMatcher
 	DnsMsgMatchers []DnsMsgMatcher
 	SubSets        []*MatcherSet
@@ -27,7 +27,7 @@ func NewMatcherSet() *MatcherSet {
 }
 
 func (d *MatcherSet) result(ok bool) bool {
-	if d.Invalid {
+	if d.Inverse {
 		return !ok
 	}
 	return ok
