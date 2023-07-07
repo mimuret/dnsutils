@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	DNSMatcherQName MatcherName = "QName"
+	DNSMatcherQNameSubDomain MatcherName = "QNameSubDomain"
 )
 
-func NewMatchDNSMsgQueryName(arg interface{}) (DnsMsgMatcher, error) {
+func NewMatchDNSMsgQueryNameSubDomain(arg interface{}) (DnsMsgMatcher, error) {
 	qName, ok := arg.(string)
 	if !ok {
 		return nil, errors.Errorf("invalid type args %v", arg)
@@ -21,14 +21,15 @@ func NewMatchDNSMsgQueryName(arg interface{}) (DnsMsgMatcher, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid domain name")
 	}
-	return &matchDNSMsgQueryName{target: buf[:offset]}, nil
+	return &matchDNSMsgQueryNameSubDomain{target: buf[:offset], offset: offset}, nil
 }
 
-type matchDNSMsgQueryName struct {
+type matchDNSMsgQueryNameSubDomain struct {
 	target []byte
+	offset int
 }
 
-func (m *matchDNSMsgQueryName) Match(d *dns.Msg) bool {
+func (m *matchDNSMsgQueryNameSubDomain) Match(d *dns.Msg) bool {
 	if len(d.Question) == 0 {
 		return false
 	}
@@ -37,9 +38,13 @@ func (m *matchDNSMsgQueryName) Match(d *dns.Msg) bool {
 	if err != nil {
 		return false
 	}
-	return bytes.Equal(m.target, buf[:offset])
+	buf = buf[:offset]
+	if len(buf) < len(m.target) {
+		return false
+	}
+	return bytes.Equal(m.target, buf[offset-m.offset:])
 }
 
 func init() {
-	RegisterDnsMsgMatcher(DNSMatcherQName, NewMatchDNSMsgQueryName, UnmarshalStringArg)
+	RegisterDnsMsgMatcher(DNSMatcherQNameSubDomain, NewMatchDNSMsgQueryNameSubDomain, UnmarshalStringArg)
 }
