@@ -237,14 +237,18 @@ func (n *NameNode) SetRRSet(set RRSetInterface) error {
 	rrsetMap := n.rrsetMap()
 	rrsetMap[set.GetRRtype()] = set
 
-	if !IsEmptyRRSet(rrsetMap[dns.TypeCNAME]) {
-		if n.RRSetLen() > 1 {
-			return ErrConflictCNAME
+	switch set.GetRRtype() {
+	case dns.TypeNSEC, dns.TypeRRSIG:
+	default:
+		if !IsEmptyRRSet(rrsetMap[dns.TypeCNAME]) {
+			if n.RRSetLen() > 1 {
+				return ErrConflictCNAME
+			}
 		}
-	}
-	if !IsEmptyRRSet(rrsetMap[dns.TypeDNAME]) {
-		if n.RRSetLen() > 1 {
-			return ErrConflictDNAME
+		if !IsEmptyRRSet(rrsetMap[dns.TypeDNAME]) {
+			if n.RRSetLen() > 1 {
+				return ErrConflictDNAME
+			}
 		}
 	}
 	n.rrsetValue.Store(rrsetMap)
