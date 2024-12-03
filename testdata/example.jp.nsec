@@ -1,0 +1,53 @@
+; File written on Mon Dec  2 23:57:49 2024
+; dnssec_signzone version 9.18.21
+example.jp.				      3600 IN SOA	localhost. root.localhost. 1 3600 900 85400 300
+example.jp.				      3600 IN RRSIG	SOA 15 2 3600 20300101000000 20240101000000 30075 example.jp. PcVTNCpT8BCRuzafQWNNjw1bM/aLS0QzBY3KhXXLTUcm5KQ3pDG/r51C b/OYCgtj376OMaPc91P/7dYOEcV0Cw==
+; resign=20300101000000
+example.jp.				      3600 IN NS	ns1.example.com.
+example.jp.				      3600 IN NS	ns2.example.com.
+example.jp.				      3600 IN RRSIG	NS 15 2 3600 20300101000000 20240101000000 30075 example.jp. BI2SECx/MMKOYL7GZ2oR9Urji7WSHwAbI+jsCmDocmtgI6eaBD92jkg0 R8FNfkZZrUQtH6XMiGneui91aJtXAQ==
+; resign=20300101000000
+example.jp.				      300 IN NSEC	\000.example.jp. NS SOA RRSIG NSEC DNSKEY
+example.jp.				      300 IN RRSIG	NSEC 15 2 300 20300101000000 20240101000000 30075 example.jp. 1NPxjKmLOb3zBq9aOW6LtV6mvGP93uTc+c75pokWO3slCvQtWRJVNHY/ ygfL6IwBv39qdEFdprSqvN65ZzeEDw==
+; resign=20300101000000
+example.jp.				      3600 IN DNSKEY	256 3 15 T0PxgSllGIc1q9d/47+anAR5i5rXl7vxAb3G+UHENRs=
+example.jp.				      3600 IN DNSKEY	257 3 15 8MzVeexk/3vOxj/fo23fg5cCY3C0Spv7EdRtRvpA/Q0=
+example.jp.				      3600 IN RRSIG	DNSKEY 15 2 3600 20300101000000 20240101000000 2290 example.jp. 16BbRlcvKVwpedvQFC6X1fa8U9jgnaLgMLc8URouI26Co10f6+mqy7EN n5Ox7yeXWLIUaLygiC2P1wqUavEsCQ==
+; resign=20300101000000
+ns.sub1.example.jp.			      3600 IN A		192.168.0.1
+ns.sub2.example.jp.			      3600 IN A		192.168.0.1
+\000.example.jp.			      3600 IN TXT	"hoge"
+\000.example.jp.			      3600 IN RRSIG	TXT 15 3 3600 20300101000000 20240101000000 30075 example.jp. a0I4CzNCRLO7GOYPfhQMvtVic3pq0ru3pUCHojnE9pdxof4f8mzG3yaP p1seYlgTRakAYn262EBA4N5X0zMCBQ==
+; resign=20300101000000
+\000.example.jp.			      300 IN NSEC	*.example.jp. TXT RRSIG NSEC
+\000.example.jp.			      300 IN RRSIG	NSEC 15 3 300 20300101000000 20240101000000 30075 example.jp. N6WEBc5/hknxY8//PEQHVs/WjzZeWhq1zEZ1ciPWuUT6gsWtmGqrw8PX yDd30pXO0km1bF/vBQtnK1wvKEiSAA==
+; resign=20300101000000
+*.example.jp.				      3600 IN A		172.16.0.1
+*.example.jp.				      3600 IN RRSIG	A 15 2 3600 20300101000000 20240101000000 30075 example.jp. GMErAifQAOCv9yXKpicFB8DR7mFUX+zTfwVZTtf/e/afoTgtlAxTQ7ri 2+M8nbdAzAs1GflJsicZkUKSF0soAw==
+; resign=20300101000000
+*.example.jp.				      300 IN NSEC	test.hoge.example.jp. A RRSIG NSEC
+*.example.jp.				      300 IN RRSIG	NSEC 15 2 300 20300101000000 20240101000000 30075 example.jp. dprQfIcrvjQ46A3b7C5f44A2SfwshXjkodB57tyvrBiJISX/+ZQtEAFl p8TFJHbYyz3s4nRS+1e+Q3SVgVntBw==
+; resign=20300101000000
+www.hoge.example.jp.			      3600 IN CNAME	www.example.net.
+www.hoge.example.jp.			      3600 IN RRSIG	CNAME 15 4 3600 20300101000000 20240101000000 30075 example.jp. 9pvgYw80D1LCv3RmVpJjjj6wnnviK3FT9NywIgsT6p9eVP6rWrYvnduM KxbFfyM1gCIESoG/x9VWe/890I67Cw==
+; resign=20300101000000
+www.hoge.example.jp.			      300 IN NSEC	sub1.example.jp. CNAME RRSIG NSEC
+www.hoge.example.jp.			      300 IN RRSIG	NSEC 15 4 300 20300101000000 20240101000000 30075 example.jp. QWsCAuVlDKcOTzK4u+m3Hz/wcODIoIzDCExMEZywi35LeQSRKv2ZeWhi IK6T0BarSrh54u+sm2asuL68t15jCg==
+; resign=20300101000000
+test.hoge.example.jp.			      3600 IN A		192.168.2.2
+test.hoge.example.jp.			      3600 IN RRSIG	A 15 4 3600 20300101000000 20240101000000 30075 example.jp. BVU4c54zo5KG756G1IJ6v83ttZZG1D8Nf5XmZtCx6Li0+BdrzyRcA3Yg 5FmIe5tH8T82AJ2rIcXOdgKIAJYzBQ==
+; resign=20300101000000
+test.hoge.example.jp.			      300 IN NSEC	www.hoge.example.jp. A RRSIG NSEC
+test.hoge.example.jp.			      300 IN RRSIG	NSEC 15 4 300 20300101000000 20240101000000 30075 example.jp. vEufNEq2DUp7mLZklnoqCXKGyKShlDGRpkxiM+KsAp42o6kATrK1Ygb0 hBLG9qR97gSIQDd0R8vh+Cg55XO+Ag==
+; resign=20300101000000
+sub2.example.jp.			      3600 IN NS	ns.sub2.example.jp.
+sub2.example.jp.			      300 IN NSEC	example.jp. NS RRSIG NSEC
+sub2.example.jp.			      300 IN RRSIG	NSEC 15 3 300 20300101000000 20240101000000 30075 example.jp. kSrc5zhMdi6vo9pXHbpSHEQy2BBXZCSxv7UfTTxQdWb5pmMFZK7Cx32e 7DSeOFvL0F6RxUcZ23OkCBeELQkXAQ==
+; resign=20300101000000
+sub1.example.jp.			      3600 IN NS	ns.sub1.example.jp.
+sub1.example.jp.			      3600 IN DS	1 8 2 41AD6EC23454A202D05BD75D9C323825C9822B9850CB1793CAB2DA28 14C74140
+sub1.example.jp.			      3600 IN RRSIG	DS 15 3 3600 20300101000000 20240101000000 30075 example.jp. 2JVtApeFm2lITlm+iweV09lON+FAfC8nT5+oq7pq1ByEfMtQyCMpJerK 6priAJA774fli3CtTuw9Mny2+jrbBg==
+; resign=20300101000000
+sub1.example.jp.			      300 IN NSEC	sub2.example.jp. NS DS RRSIG NSEC
+sub1.example.jp.			      300 IN RRSIG	NSEC 15 3 300 20300101000000 20240101000000 30075 example.jp. 8TUsXjfviHW9DS4WY+5F6QXdf1mfSZYe6FgclBEHNNNTbexmL6BMS/T9 HKA+Ck+h8Pt1u4b6Fl2nSvkvpLsbBA==
+; resign=20300101000000

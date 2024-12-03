@@ -79,6 +79,9 @@ func (z *Zone) Read(r io.Reader) error {
 		z.root, _ = z.generator.NewNameNode(z.name, z.class)
 	}
 	for _, rr := range rrs {
+		if !dns.IsSubDomain(z.GetName(), rr.Header().Name) {
+			return fmt.Errorf("%s out of zone data", rr.Header().Name)
+		}
 		nn, ok := z.GetRootNode().GetNameNode(rr.Header().Name)
 		if !ok || nn == nil {
 			nn, _ = z.generator.NewNameNode(rr.Header().Name, z.GetClass())
@@ -94,7 +97,18 @@ func (z *Zone) Read(r io.Reader) error {
 			return fmt.Errorf("failed to set node: %w", err)
 		}
 	}
-	return nil
+	return ZoneNormalize(z)
+}
+
+func (z *Zone) Text(w io.Writer) {
+	z.GetRootNode().IterateNameNode(func(nni NameNodeInterface) error {
+		return nni.IterateNameRRSet(func(set RRSetInterface) error {
+			for _, rr := range set.GetRRs() {
+				w.Write([]byte(rr.String() + "\n"))
+			}
+			return nil
+		})
+	})
 }
 
 // UnmarshalJSON reads zone data from json.RawMessage.
@@ -156,4 +170,60 @@ func (z *Zone) MarshalJSON() ([]byte, error) {
 		})
 	})
 	return json.Marshal(v)
+}
+
+func ZoneNormalize(z ZoneInterface) error {
+	if _, err := GetSOA(z); err != nil {
+		return ErrBadZone
+	}
+	zoneCuts, delegateNS, err := GetZoneCuts(z.GetRootNode())
+	if err != nil {
+		return ErrBadZone
+	}
+
+	z.GetRootNode().IterateNameNode(func(nni NameNodeInterface) error {
+		if IsENT(nni) {
+			return nil
+		}
+		parent, strict := zoneCuts.GetNameNode(nni.GetName())
+		if !strict && parent.GetName() != z.GetName() && parent.GetRRSet(dns.TypeNS) != nil {
+			if _, ok := delegateNS[nni.GetName()]; !ok {
+				RemoveNameNode(z.GetRootNode(), nni.GetName())
+			}
+		}
+		return nil
+	})
+
+	return nil
+}
+
+func GetZoneCuts(rootNode NameNodeInterface) (NameNodeInterface, map[string]struct{}, error) {
+	delegateNS := map[string]struct{}{}
+	zoneCuts, _ := NewNameNode(rootNode.GetName(), rootNode.GetClass())
+	err := rootNode.IterateNameNodeWithValue(func(nni NameNodeInterface, v any) (any, error) {
+		aa := v.(bool)
+		if !aa {
+			return aa, nil
+		}
+		if nni.GetName() != rootNode.GetName() {
+			if nsRRSet := nni.GetRRSet(dns.TypeNS); nsRRSet != nil {
+				for _, rr := range nsRRSet.GetRRs() {
+					if ns, ok := rr.(*dns.NS); ok {
+						delegateNS[dns.CanonicalName(ns.Ns)] = struct{}{}
+					} else {
+						return aa, ErrInvalid
+					}
+				}
+				zoneCut, _ := NewNameNode(nni.GetName(), rootNode.GetClass())
+				zoneCut.SetRRSet(nsRRSet)
+				zoneCuts.AddChildNameNode(zoneCut)
+				aa = false
+			}
+		}
+		return aa, nil
+	}, true)
+	if err != nil {
+		return nil, nil, err
+	}
+	return zoneCuts, delegateNS, nil
 }

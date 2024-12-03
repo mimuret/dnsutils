@@ -239,6 +239,189 @@ var _ = Describe("utils", func() {
 			})
 		})
 	})
+	Context("IsEqualsNode", func() {
+		var (
+			a, b *dnsutils.NameNode
+			ok   bool
+		)
+		When("equls empty node", func() {
+			BeforeEach(func() {
+				a = MustNewNameNode("example.jp.", dns.ClassINET)
+				b = MustNewNameNode("example.jp.", dns.ClassINET)
+				ok = dnsutils.IsEqualsNode(a, b, false)
+			})
+			It("returns true", func() {
+				Expect(ok).To(BeTrue())
+			})
+		})
+		When("equls node", func() {
+			BeforeEach(func() {
+				a = MustNewNameNode("example.jp.", dns.ClassINET)
+				a.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeSOA, []dns.RR{MustNewRR("example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300")}))
+				a.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeNS, []dns.RR{MustNewRR("example.jp. 3600 IN NS ns.example.com.")}))
+
+				b = MustNewNameNode("example.jp.", dns.ClassINET)
+				b.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeSOA, []dns.RR{MustNewRR("example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300")}))
+				b.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeNS, []dns.RR{MustNewRR("example.jp. 3600 IN NS ns.example.com.")}))
+			})
+			It("returns true", func() {
+				ok = dnsutils.IsEqualsNode(a, b, false)
+				Expect(ok).To(BeTrue())
+				ok = dnsutils.IsEqualsNode(a, b, true)
+				Expect(ok).To(BeTrue())
+			})
+		})
+		When("a has more rrset", func() {
+			BeforeEach(func() {
+				a = MustNewNameNode("example.jp.", dns.ClassINET)
+				a.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeSOA, []dns.RR{MustNewRR("example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300")}))
+				a.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeNS, []dns.RR{MustNewRR("example.jp. 3600 IN NS ns.example.com.")}))
+
+				b = MustNewNameNode("example.jp.", dns.ClassINET)
+				b.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeSOA, []dns.RR{MustNewRR("example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300")}))
+			})
+			It("returns false", func() {
+				ok = dnsutils.IsEqualsNode(a, b, false)
+				Expect(ok).To(BeFalse())
+				ok = dnsutils.IsEqualsNode(a, b, true)
+				Expect(ok).To(BeFalse())
+			})
+		})
+		When("name ignore", func() {
+			BeforeEach(func() {
+				a = MustNewNameNode("example.jp.", dns.ClassINET)
+				b = MustNewNameNode("example.com.", dns.ClassINET)
+				ok = dnsutils.IsEqualsNode(a, b, false)
+			})
+			It("returns false", func() {
+				Expect(ok).To(BeFalse())
+			})
+		})
+		When("rrset ignore", func() {
+			BeforeEach(func() {
+				a = MustNewNameNode("example.jp.", dns.ClassINET)
+				a.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeSOA, []dns.RR{MustNewRR("example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300")}))
+				a.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeNS, []dns.RR{MustNewRR("example.jp. 3600 IN NS ns.example.com.")}))
+				b = MustNewNameNode("example.jp.", dns.ClassINET)
+				b.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeSOA, []dns.RR{MustNewRR("example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300")}))
+				b.SetRRSet(MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeNS, []dns.RR{MustNewRR("example.jp. 3600 IN NS ns.example.net.")}))
+			})
+			It("returns false", func() {
+				ok = dnsutils.IsEqualsNode(a, b, false)
+				Expect(ok).To(BeFalse())
+				ok = dnsutils.IsEqualsNode(a, b, true)
+				Expect(ok).To(BeFalse())
+			})
+		})
+	})
+	Context("IsEqualsAllTree", func() {
+		var (
+			a, b     *dnsutils.NameNode
+			ok       bool
+			err      error
+			soaRRSet = MustNewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeSOA, []dns.RR{MustNewRR("example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300")})
+			wwwRRSet = MustNewRRSet("www.sub.example.jp.", 3600, dns.ClassINET, dns.TypeA, []dns.RR{MustNewRR("www.sub.exmaple.jp. 3600 IN A 192.168.0.0")})
+			mxRRSet  = MustNewRRSet("mx.sub.example.jp.", 3600, dns.ClassINET, dns.TypeMX, []dns.RR{MustNewRR("mx.sub.exmaple.jp. 3600 IN MX 0 mx.example.com.")})
+
+			txtRRSet  = MustNewRRSet("txt.example.jp.", 3600, dns.ClassINET, dns.TypeTXT, []dns.RR{MustNewRR("txt.exmaple.jp. 3600 IN TXT \"hoge\"")})
+			www6RRSet = MustNewRRSet("www.sub.example.jp.", 3600, dns.ClassINET, dns.TypeAAAA, []dns.RR{MustNewRR("www.sub.exmaple.jp. 3600 IN AAAA 2001:db8::1")})
+		)
+		BeforeEach(func() {
+			a = MustNewNameNode("example.jp.", dns.ClassINET)
+			a.SetRRSet(soaRRSet)
+			mxNode := MustNewNameNode("mx.sub.example.jp.", dns.ClassINET)
+			mxNode.SetRRSet(mxRRSet)
+			err = dnsutils.SetNameNode(a, mxNode, nil)
+			Expect(err).To(Succeed())
+			wwwNode := MustNewNameNode("www.sub.example.jp.", dns.ClassINET)
+			wwwNode.SetRRSet(wwwRRSet)
+			err = dnsutils.SetNameNode(a, wwwNode, nil)
+			Expect(err).To(Succeed())
+		})
+		When("equsls tree", func() {
+			BeforeEach(func() {
+				ok = dnsutils.IsEqualsAllTree(a, a, false)
+			})
+			It("returns true", func() {
+				Expect(ok).To(BeTrue())
+			})
+		})
+		When("root node name ignore", func() {
+			BeforeEach(func() {
+				a = MustNewNameNode("example.jp.", dns.ClassINET)
+				b = MustNewNameNode("example.com.", dns.ClassINET)
+				ok = dnsutils.IsEqualsAllTree(a, b, false)
+			})
+			It("returns false", func() {
+				Expect(ok).To(BeFalse())
+			})
+		})
+		When("a have more subdomain node", func() {
+			BeforeEach(func() {
+				b = MustNewNameNode("example.jp.", dns.ClassINET)
+				b.SetRRSet(soaRRSet)
+				ok = dnsutils.IsEqualsAllTree(a, b, false)
+			})
+			It("returns false", func() {
+				Expect(ok).To(BeFalse())
+			})
+		})
+		When("a have more node", func() {
+			BeforeEach(func() {
+				b = MustNewNameNode("example.jp.", dns.ClassINET)
+				b.SetRRSet(soaRRSet)
+				mxNode := MustNewNameNode("mx.sub.example.jp.", dns.ClassINET)
+				mxNode.SetRRSet(mxRRSet)
+				err = dnsutils.SetNameNode(b, mxNode, nil)
+				Expect(err).To(Succeed())
+				ok = dnsutils.IsEqualsAllTree(a, b, false)
+			})
+			It("returns false", func() {
+				Expect(ok).To(BeFalse())
+			})
+		})
+		When("b have more node", func() {
+			BeforeEach(func() {
+				b = MustNewNameNode("example.jp.", dns.ClassINET)
+				b.SetRRSet(soaRRSet)
+				mxNode := MustNewNameNode("mx.sub.example.jp.", dns.ClassINET)
+				mxNode.SetRRSet(mxRRSet)
+				err = dnsutils.SetNameNode(b, mxNode, nil)
+				Expect(err).To(Succeed())
+				wwwNode := MustNewNameNode("www.sub.example.jp.", dns.ClassINET)
+				wwwNode.SetRRSet(wwwRRSet)
+				err = dnsutils.SetNameNode(b, wwwNode, nil)
+				Expect(err).To(Succeed())
+				txtNode := MustNewNameNode("txt.example.jp.", dns.ClassINET)
+				txtNode.SetRRSet(txtRRSet)
+				err = dnsutils.SetNameNode(b, txtNode, nil)
+				Expect(err).To(Succeed())
+				ok = dnsutils.IsEqualsAllTree(a, b, true)
+			})
+			It("returns false", func() {
+				Expect(ok).To(BeFalse())
+			})
+		})
+		When("ignore node", func() {
+			BeforeEach(func() {
+				b = MustNewNameNode("example.jp.", dns.ClassINET)
+				b.SetRRSet(soaRRSet)
+				mxNode := MustNewNameNode("mx.sub.example.jp.", dns.ClassINET)
+				mxNode.SetRRSet(mxRRSet)
+				err = dnsutils.SetNameNode(b, mxNode, nil)
+				Expect(err).To(Succeed())
+				wwwNode := MustNewNameNode("www.sub.example.jp.", dns.ClassINET)
+				wwwNode.SetRRSet(wwwRRSet)
+				wwwNode.SetRRSet(www6RRSet)
+				err = dnsutils.SetNameNode(b, wwwNode, nil)
+				Expect(err).To(Succeed())
+				ok = dnsutils.IsEqualsAllTree(a, b, true)
+			})
+			It("returns false", func() {
+				Expect(ok).To(BeFalse())
+			})
+		})
+	})
 	Context("IsEmptyRRSet", func() {
 		When("set is nil", func() {
 			It("returns true", func() {
@@ -783,5 +966,74 @@ var _ = Describe("utils", func() {
 			})
 		})
 	})
-
+	Context("Test SortNamesFunc", func() {
+		var (
+			names []string
+			err   error
+			res   []string
+		)
+		When("invalid names", func() {
+			BeforeEach(func() {
+				names = []string{
+					"example.jp.",
+					".example.jp",
+				}
+				res, err = dnsutils.SortNames(names)
+			})
+			It("return err", func() {
+				Expect(err).To(Equal(dnsutils.ErrBadName))
+				Expect(names).To(Equal([]string{
+					"example.jp.",
+					".example.jp",
+				}))
+				Expect(res).To(BeNil())
+			})
+		})
+		When("valid names", func() {
+			BeforeEach(func() {
+				names = []string{
+					"a.example",
+					"zABC.a.EXAMPLE",
+					"yljkjljk.a.example",
+					"Z.a.example",
+					"*.z.example",
+					"\200.z.example",
+					"z.example",
+					"\001.z.example",
+				}
+				res, err = dnsutils.SortNames(names)
+			})
+			It("return err", func() {
+				Expect(err).To(Succeed())
+				Expect(res).To(Equal([]string{
+					"a.example",
+					"yljkjljk.a.example",
+					"Z.a.example",
+					"zABC.a.EXAMPLE",
+					"z.example",
+					"\001.z.example",
+					"*.z.example",
+					"\200.z.example",
+				}))
+			})
+		})
+		When("valid names2", func() {
+			BeforeEach(func() {
+				names = []string{
+					"example.jp.",
+					"*.example.jp.",
+					"\000.example.jp.",
+				}
+				res, err = dnsutils.SortNames(names)
+			})
+			It("return err", func() {
+				Expect(err).To(Succeed())
+				Expect(res).To(Equal([]string{
+					"example.jp.",
+					"\000.example.jp.",
+					"*.example.jp.",
+				}))
+			})
+		})
+	})
 })

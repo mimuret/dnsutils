@@ -1,0 +1,12 @@
+example.jp. 3600 IN SOA localhost. root.localhost. 1 3600 900 85400 300
+example.jp. 3600 IN NS ns1.example.com.
+example.jp. 3600 IN NS ns2.example.com.
+www.hoge.example.jp. 3600 IN CNAME www.example.net.
+test.hoge.example.jp. 3600 IN A 192.168.2.2
+sub1.example.jp.  3600 IN NS ns.sub1.example.jp.
+sub1.example.jp.  3600 IN DS 1 8 2 41AD6EC23454A202D05BD75D9C323825C9822B9850CB1793CAB2DA28 14C74140
+ns.sub1.example.jp. 3600 IN A 192.168.0.1
+sub2.example.jp.  3600 IN NS ns.sub2.example.jp.
+ns.sub2.example.jp. 3600 IN A 192.168.0.1
+\000.example.jp. 3600 IN TXT "hoge"
+*.example.jp. 3600 IN A 172.16.0.1

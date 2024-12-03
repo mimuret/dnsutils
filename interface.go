@@ -54,6 +54,10 @@ type NameNodeInterface interface {
 	// sort oreder is implementation dependent.
 	IterateNameNode(func(NameNodeInterface) error) error
 
+	// IterateNameNode can iterate function by NameNodeInterface
+	// sort oreder is implementation dependent.
+	IterateNameNodeWithValue(f func(NameNodeInterface, any) (any, error), v any) error
+
 	// AddChildNode adds child node into children.
 	AddChildNameNode(NameNodeInterface) error
 

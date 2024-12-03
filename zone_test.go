@@ -18,6 +18,12 @@ var testZoneNormal []byte
 //go:embed testdata/example.jp.error
 var testZoneError []byte
 
+//go:embed testdata/example.jp.out-of-zone
+var testZoneOutofZoneError []byte
+
+//go:embed testdata/example.jp.normalize
+var testZoneNormalize []byte
+
 //go:embed testdata/example.jp.name-error
 var testZoneNameError []byte
 
@@ -86,6 +92,41 @@ var _ = Describe("Zone", func() {
 					MustNewRR("test.hoge.example.jp. 3600 IN A 192.168.2.1"),
 					MustNewRR("test.hoge.example.jp. 3600 IN A 192.168.2.2"),
 				}))
+			})
+		})
+		When("normalize", func() {
+			BeforeEach(func() {
+				testZoneNormalBuf := bytes.NewBuffer(testZoneNormalize)
+				z = &dnsutils.Zone{}
+				err = z.Read(testZoneNormalBuf)
+			})
+			It("can read data", func() {
+				Expect(err).To(Succeed())
+				Expect(z.GetName()).To(Equal("example.jp."))
+				Expect(z.GetClass()).To(Equal(dns.Class(dns.ClassINET)))
+				Expect(z.GetRootNode()).NotTo(BeNil())
+				_, ok := z.GetRootNode().GetNameNode("sub1.example.jp.")
+				Expect(ok).To(BeTrue())
+				_, ok = z.GetRootNode().GetNameNode("ns.sub1.example.jp.")
+				Expect(ok).To(BeTrue())
+				_, ok = z.GetRootNode().GetNameNode("sub2.example.jp.")
+				Expect(ok).To(BeTrue())
+				_, ok = z.GetRootNode().GetNameNode("ns.sub2.example.jp.")
+				Expect(ok).To(BeFalse())
+				_, ok = z.GetRootNode().GetNameNode("sub3.example.jp.")
+				Expect(ok).To(BeTrue())
+				_, ok = z.GetRootNode().GetNameNode("ns.sub.sub3.example.jp.")
+				Expect(ok).To(BeTrue())
+			})
+		})
+		When("out of zone data", func() {
+			BeforeEach(func() {
+				testZoneNormalBuf := bytes.NewBuffer(testZoneOutofZoneError)
+				z = &dnsutils.Zone{}
+				err = z.Read(testZoneNormalBuf)
+			})
+			It("can't read not valid data", func() {
+				Expect(err).To(HaveOccurred())
 			})
 		})
 		When("include can't add RR (duplicate cname)", func() {

@@ -3,6 +3,7 @@ package dnsutils
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,6 +19,9 @@ var (
 
 	// ErrNotTreeBroken returns tree is broken
 	ErrNameTreeBroken = fmt.Errorf("name tree broken")
+
+	// ErrBadZone
+	ErrBadZone = fmt.Errorf("invalid zone")
 )
 
 type Generator interface {
@@ -147,6 +151,64 @@ func IsCompleteEqualsRRSet(a, b RRSetInterface) bool {
 		}
 	}
 	return false
+}
+
+// IsEqualsNode check that both node equal. However ttl value will be ignored.
+func IsEqualsNode(a, b NameNodeInterface, ttl bool) bool {
+	if a.GetName() != b.GetName() {
+		return false
+	}
+	aRRSet := a.CopyRRSetMap()
+	bRRSet := b.CopyRRSetMap()
+	exist := map[uint16]struct{}{}
+	for rrTypes := range bRRSet {
+		exist[rrTypes] = struct{}{}
+	}
+	for rrType := range aRRSet {
+		if _, ok := bRRSet[rrType]; !ok {
+			return false
+		}
+		if ttl {
+			if !IsCompleteEqualsRRSet(aRRSet[rrType], bRRSet[rrType]) {
+				return false
+			}
+		} else {
+			if !IsEqualsRRSet(aRRSet[rrType], bRRSet[rrType]) {
+				return false
+			}
+		}
+		delete(exist, rrType)
+	}
+	return len(exist) == 0
+}
+
+// IsEqualsNode check that both tree equal. However ttl value will be ignored.
+func IsEqualsAllTree(a, b NameNodeInterface, ttl bool) bool {
+	if a.GetName() != b.GetName() {
+		return false
+	}
+	err := a.IterateNameNode(func(ani NameNodeInterface) error {
+		bni, strict := b.GetNameNode(ani.GetName())
+		if !strict {
+			return fmt.Errorf("not exist %s", ani.GetName())
+		}
+		if !IsEqualsNode(ani, bni, ttl) {
+			return fmt.Errorf("not equals %s %s", ani.GetName(), bni.GetName())
+		}
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+	err = b.IterateNameNode(func(bni NameNodeInterface) error {
+		ani, strict := a.GetNameNode(bni.GetName())
+		fmt.Println("search a", bni.GetName(), strict, ani)
+		if !strict {
+			return fmt.Errorf("not exist %s", bni.GetName())
+		}
+		return nil
+	})
+	return err == nil
 }
 
 // IsEmptyRRSet check that rrset is empty.
@@ -367,4 +429,81 @@ func GetAllParentNames(name string, level uint) ([]string, bool) {
 		names = append(names, dns.CanonicalName(strings.Join(labels[i:], ".")))
 	}
 	return names, true
+}
+
+// https://datatracker.ietf.org/doc/html/rfc4034#section-6.1
+// SortNamesFunc returns sorted names
+func SortNames(names []string) ([]string, error) {
+	var err error
+	sort.SliceStable(names, func(i, j int) bool {
+		cmp, cErr := CompareName(names[i], names[j])
+		if cErr != nil {
+			err = cErr
+		}
+		return cmp < 0
+	})
+	if err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
+func SplitLabelsBytes(name string) ([][]byte, error) {
+	buf := make([]byte, 255)
+	offset, err := dns.PackDomainName(name, buf, 0, nil, false)
+	if err != nil {
+		return nil, ErrBadName
+	}
+	var res [][]byte
+	var i byte
+	for i < byte(offset) {
+		labelLen := buf[i]
+		if labelLen == 0 {
+			break
+		}
+		i++
+		label := make([]byte, labelLen)
+		copy(label, buf[i:i+labelLen])
+		res = append(res, label)
+		i = i + labelLen
+	}
+	return res, nil
+}
+
+// The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
+func CompareName(a, b string) (int, error) {
+	al, err := SplitLabelsBytes(dns.CanonicalName(a))
+	if err != nil {
+		return 0, ErrBadName
+	}
+	bl, err := SplitLabelsBytes(dns.CanonicalName(b))
+	if err != nil {
+		return 0, ErrBadName
+	}
+	slices.Reverse(al)
+	slices.Reverse(bl)
+	for i := 0; i < len(al) && i < len(bl); i++ {
+		if res := bytes.Compare(al[i], bl[i]); res != 0 {
+			return res, nil
+		}
+	}
+	if len(al) == len(bl) {
+		return 0, nil
+	}
+	if len(al) > len(bl) {
+		return 1, nil
+	}
+	return -1, nil
+}
+
+func GetSOA(z ZoneInterface) (*dns.SOA, error) {
+	soaRRSet := z.GetRootNode().GetRRSet(dns.TypeSOA)
+	if soaRRSet == nil {
+		return nil, ErrBadZone
+	}
+	soa, ok := soaRRSet.GetRRs()[0].(*dns.SOA)
+	if !ok {
+		return nil, ErrBadZone
+	}
+	return soa, nil
 }
