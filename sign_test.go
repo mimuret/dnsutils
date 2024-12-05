@@ -1,0 +1,231 @@
+package dnsutils_test
+
+import (
+	"bytes"
+	_ "embed"
+	"errors"
+	"time"
+
+	"github.com/miekg/dns"
+	"github.com/mimuret/dnsutils"
+	"github.com/mimuret/dnsutils/testtool"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+)
+
+//go:embed testdata/example.jp.sign
+var testSignZone []byte
+
+//go:embed testdata/example.jp.nsec
+var testNsecSignedZone []byte
+
+//go:embed testdata/keys/Kexample.jp.+015+02290.private
+var testDnskeyED25519KSKPriv []byte
+
+//go:embed testdata/keys/Kexample.jp.+015+02290.key
+var testDnskeyED25519KSKPub []byte
+
+//go:embed testdata/keys/Kexample.jp.+015+30075.private
+var testDnskeyED25519ZSKPriv []byte
+
+//go:embed testdata/keys/Kexample.jp.+015+30075.key
+var testDnskeyED25519ZSKPub []byte
+
+var _ = Describe("Test sign.go", func() {
+	var (
+		err            error
+		z              *dnsutils.Zone
+		inception      = uint32(1704067200)
+		expiration     = uint32(1893456000)
+		nsecSignOption = dnsutils.SignOption{
+			DoEMethod:  dnsutils.DenialOfExistenceMethodNSEC,
+			Inception:  &inception,
+			Expiration: &expiration,
+		}
+		zsk              *dnsutils.DNSKEY
+		ksk              *dnsutils.DNSKEY
+		dnskeys          []*dnsutils.DNSKEY
+		nsec_signed_zone *dnsutils.Zone
+	)
+	BeforeEach(func() {
+		ksk, err = dnsutils.ReadDNSKEY(bytes.NewBuffer(testDnskeyED25519KSKPriv), bytes.NewBuffer(testDnskeyED25519KSKPub))
+		Expect(err).To(Succeed())
+		zsk, err = dnsutils.ReadDNSKEY(bytes.NewBuffer(testDnskeyED25519ZSKPriv), bytes.NewBuffer(testDnskeyED25519ZSKPub))
+		Expect(err).To(Succeed())
+		dnskeys = []*dnsutils.DNSKEY{ksk, zsk}
+
+		nsec_signed_zone = &dnsutils.Zone{}
+		err = nsec_signed_zone.Read(bytes.NewBuffer(testNsecSignedZone))
+		Expect(err).To(Succeed())
+	})
+	It("can read ED25519 zsk/ksk", func() {
+		Expect(ksk.GetRR().KeyTag()).To(Equal(uint16(2290)))
+		Expect(ksk.GetSigner().Public())
+		Expect(zsk.GetRR().KeyTag()).To(Equal(uint16(30075)))
+	})
+	Context("SignOption", func() {
+		var (
+			signOpt               dnsutils.SignOption
+			beforeSign            time.Duration
+			expiry                time.Duration
+			inception, expiration uint32
+		)
+		When("default", func() {
+			Context("GetBeforSign", func() {
+				BeforeEach(func() {
+					signOpt = dnsutils.SignOption{}
+					dnsutils.DefaultBeforeSign = time.Hour * 2
+					beforeSign = signOpt.GetBeforSign()
+				})
+				AfterEach(func() {
+					dnsutils.DefaultBeforeSign = time.Hour
+				})
+				It("returns 2 hour", func() {
+					Expect(beforeSign).To(Equal(time.Hour * 2))
+				})
+			})
+			Context("GetExpiry", func() {
+				BeforeEach(func() {
+					signOpt = dnsutils.SignOption{}
+					dnsutils.DefaultExpiry = time.Hour * 30
+					expiry = signOpt.GetExpiry()
+				})
+				AfterEach(func() {
+					dnsutils.DefaultExpiry = time.Hour * 24 * 14
+				})
+				It("returns an hour", func() {
+					Expect(expiry).To(Equal(time.Hour * 30))
+				})
+			})
+			Context("GetInception", func() {
+				BeforeEach(func() {
+					signOpt = dnsutils.SignOption{}
+					inception = signOpt.GetInception()
+				})
+				It("returns last hour", func() {
+					u := time.Now().UTC().Add(-time.Hour).Unix()
+					Expect(inception).To(BeNumerically("~", u-60, u))
+				})
+			})
+			Context("GetExpiration", func() {
+				BeforeEach(func() {
+					signOpt = dnsutils.SignOption{}
+					expiration = signOpt.GetExpiration()
+				})
+				It("returns 2 weeks later", func() {
+					u := time.Now().UTC().Add(dnsutils.DefaultExpiry).Unix()
+					Expect(expiration).To(BeNumerically("~", u-60, u))
+				})
+			})
+		})
+	})
+	Context("ReadDNSKEY", func() {
+		var (
+			dnskey *dnsutils.DNSKEY
+			err    error
+		)
+		When("no have DNSKEY", func() {
+			BeforeEach(func() {
+				dnskey, err = dnsutils.ReadDNSKEY(bytes.NewBuffer(testDnskeyED25519KSKPriv), bytes.NewBuffer(testSignZone))
+			})
+			It("return err", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+		When("no have privateKey", func() {
+			BeforeEach(func() {
+				dnskey, err = dnsutils.ReadDNSKEY(bytes.NewBuffer([]byte{}), bytes.NewBuffer(testDnskeyED25519KSKPub))
+			})
+			It("return err", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+		When("valid data", func() {
+			BeforeEach(func() {
+				dnskey, err = dnsutils.ReadDNSKEY(bytes.NewBuffer(testDnskeyED25519KSKPriv), bytes.NewBuffer(testDnskeyED25519KSKPub))
+			})
+			It("return err", func() {
+				Expect(err).To(Succeed())
+				Expect(dnskey).NotTo(BeNil())
+			})
+		})
+	})
+	Context("AddDNSKEY", func() {
+		var (
+			err error
+			z   *dnsutils.Zone
+		)
+		BeforeEach(func() {
+			z = &dnsutils.Zone{}
+			err = z.Read(bytes.NewBuffer(testSignZone))
+			Expect(err).To(Succeed())
+		})
+		When("empty key", func() {
+			BeforeEach(func() {
+				err = dnsutils.AddDNSKEY(z, nil, uint32(0), nil)
+			})
+			It("returns err", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+		When("failed to create DNSKEY rrset", func() {
+			BeforeEach(func() {
+				err = dnsutils.AddDNSKEY(z, nil, uint32(0), &testtool.TestGenerator{NewRRSetErr: errors.New("")})
+			})
+			It("returns err", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+		When("add valid DNSKEY", func() {
+			BeforeEach(func() {
+				err = dnsutils.AddDNSKEY(z, []*dnsutils.DNSKEY{ksk}, uint32(0), nil)
+			})
+			It("succeed", func() {
+				Expect(err).To(Succeed())
+			})
+		})
+	})
+	Context("CreateDoE", func() {
+		BeforeEach(func() {
+			testZoneNormalBuf := bytes.NewBuffer(testSignZone)
+			z = &dnsutils.Zone{}
+			err = z.Read(testZoneNormalBuf)
+			Expect(err).To(Succeed())
+			err = dnsutils.CreateDoE(z, nsecSignOption, nil)
+		})
+		It("return success", func() {
+			Expect(err).To(Succeed())
+			var nsecRRs []dns.RR
+			z.GetRootNode().IterateNameNode(func(nni dnsutils.NameNodeInterface) error {
+				if nsecRRSet := nni.GetRRSet(dns.TypeNSEC); nsecRRSet != nil {
+					nsecRRs = append(nsecRRs, nsecRRSet.GetRRs()...)
+				}
+				return nil
+			})
+			Expect(nsecRRs[0]).To(Equal(testtool.MustNewRR("example.jp. 300 IN NSEC \\000.example.jp. NS SOA RRSIG NSEC")))
+			Expect(nsecRRs[1]).To(Equal(testtool.MustNewRR("\\000.example.jp. 300 IN NSEC *.example.jp. TXT RRSIG NSEC")))
+			Expect(nsecRRs[2]).To(Equal(testtool.MustNewRR("*.example.jp. 300 IN NSEC test.hoge.example.jp. A RRSIG NSEC")))
+			Expect(nsecRRs[3]).To(Equal(testtool.MustNewRR("test.hoge.example.jp. 300 IN NSEC www.hoge.example.jp. A RRSIG NSEC")))
+			Expect(nsecRRs[4]).To(Equal(testtool.MustNewRR("www.hoge.example.jp. 300 IN NSEC sub1.example.jp. CNAME RRSIG NSEC")))
+			Expect(nsecRRs[5]).To(Equal(testtool.MustNewRR("sub1.example.jp. 300 IN NSEC sub2.example.jp. NS DS RRSIG NSEC")))
+			Expect(nsecRRs[6]).To(Equal(testtool.MustNewRR("sub2.example.jp. 300 IN NSEC example.jp. NS RRSIG NSEC")))
+		})
+	})
+	Context("Test for Sign", func() {
+		BeforeEach(func() {
+			testZoneNormalBuf := bytes.NewBuffer(testSignZone)
+			z = &dnsutils.Zone{}
+			err = z.Read(testZoneNormalBuf)
+			Expect(err).To(Succeed())
+			err = dnsutils.AddDNSKEY(z, dnskeys, uint32(0), nil)
+			Expect(err).To(Succeed())
+			err = dnsutils.CreateDoE(z, nsecSignOption, nil)
+			Expect(err).To(Succeed())
+			err = dnsutils.SignZone(z, nsecSignOption, dnskeys, nil)
+		})
+		It("return success", func() {
+			Expect(err).To(Succeed())
+			Expect(dnsutils.IsEqualsAllTree(z.GetRootNode(), nsec_signed_zone.GetRootNode(), false)).To(BeTrue())
+		})
+	})
+})

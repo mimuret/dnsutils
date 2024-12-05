@@ -164,19 +164,28 @@ func (n *NameNode) IterateNameRRSet(f func(RRSetInterface) error) error {
 }
 
 // IterateNameNode is implement of NameNodeInterface.IterateNameNode
-// sort order using sort.StringSlice Sort.
+// sort order using SortName (rfc4034#section6-1).
 func (n *NameNode) IterateNameNode(f func(NameNodeInterface) error) error {
-	if err := f(n); err != nil {
+	return n.IterateNameNodeWithValue(func(nni NameNodeInterface, _ any) (any, error) {
+		return nil, f(nni)
+	}, nil)
+}
+
+// IterateNameNodeWithValue is implement of NameNodeInterface.IterateNameNodeWithValue
+// sort order using SortName (rfc4034#section6-1).
+func (n *NameNode) IterateNameNodeWithValue(f func(NameNodeInterface, any) (any, error), v any) error {
+	res, err := f(n, v)
+	if err != nil {
 		return err
 	}
-	rrsetMap := n.children()
-	keys := sort.StringSlice{}
-	for key := range rrsetMap {
+	children := n.children()
+	keys := []string{}
+	for key := range children {
 		keys = append(keys, key)
 	}
-	keys.Sort()
+	keys, _ = SortNames(keys)
 	for _, name := range keys {
-		if err := rrsetMap[name].IterateNameNode(f); err != nil {
+		if err := children[name].IterateNameNodeWithValue(f, res); err != nil {
 			return err
 		}
 	}
@@ -201,7 +210,7 @@ func (n *NameNode) AddChildNameNode(nn NameNodeInterface) error {
 	return nil
 }
 
-// RemoveChildNameNode is implement of NameNodeInterface.AddChildNameNode
+// RemoveChildNameNode is implement of NameNodeInterface.RemoveChildNameNode
 func (n *NameNode) RemoveChildNameNode(name string) error {
 	name = dns.CanonicalName(name)
 	if !dns.IsSubDomain(n.GetName(), name) {
@@ -237,14 +246,18 @@ func (n *NameNode) SetRRSet(set RRSetInterface) error {
 	rrsetMap := n.rrsetMap()
 	rrsetMap[set.GetRRtype()] = set
 
-	if !IsEmptyRRSet(rrsetMap[dns.TypeCNAME]) {
-		if n.RRSetLen() > 1 {
-			return ErrConflictCNAME
+	switch set.GetRRtype() {
+	case dns.TypeNSEC, dns.TypeRRSIG:
+	default:
+		if !IsEmptyRRSet(rrsetMap[dns.TypeCNAME]) {
+			if n.RRSetLen() > 1 {
+				return ErrConflictCNAME
+			}
 		}
-	}
-	if !IsEmptyRRSet(rrsetMap[dns.TypeDNAME]) {
-		if n.RRSetLen() > 1 {
-			return ErrConflictDNAME
+		if !IsEmptyRRSet(rrsetMap[dns.TypeDNAME]) {
+			if n.RRSetLen() > 1 {
+				return ErrConflictDNAME
+			}
 		}
 	}
 	n.rrsetValue.Store(rrsetMap)
