@@ -201,8 +201,7 @@ func IsEqualsAllTree(a, b NameNodeInterface, ttl bool) bool {
 		return false
 	}
 	err = b.IterateNameNode(func(bni NameNodeInterface) error {
-		ani, strict := a.GetNameNode(bni.GetName())
-		fmt.Println("search a", bni.GetName(), strict, ani)
+		_, strict := a.GetNameNode(bni.GetName())
 		if !strict {
 			return fmt.Errorf("not exist %s", bni.GetName())
 		}
