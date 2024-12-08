@@ -175,50 +175,50 @@ var _ = Describe("utils", func() {
 	Context("IsEqualsRRSet", func() {
 		When("ignore name", func() {
 			It("returns false", func() {
-				a := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, nil)
+				a := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, nil)
 				b := MustNewRRSet("example.jp2", 300, dns.ClassINET, dns.TypeA, nil)
 				Expect(dnsutils.IsEqualsRRSet(a, b)).To(BeFalse())
 			})
 		})
 		When("ignore type", func() {
 			It("returns false", func() {
-				a := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, nil)
-				b := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeAAAA, nil)
+				a := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, nil)
+				b := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeAAAA, nil)
 				Expect(dnsutils.IsEqualsRRSet(a, b)).To(BeFalse())
 			})
 		})
 		When("ignore rdata length", func() {
 			It("returns false", func() {
-				a := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
-				b := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a2})
+				a := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				b := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a2})
 				Expect(dnsutils.IsEqualsRRSet(a, b)).To(BeFalse())
 			})
 		})
 		When("ignore rdata", func() {
 			It("returns false", func() {
-				a := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1})
-				b := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a2})
+				a := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1})
+				b := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a2})
 				Expect(dnsutils.IsEqualsRRSet(a, b)).To(BeFalse())
 			})
 		})
 		When("same (rdata is particular order)", func() {
 			It("returns true", func() {
-				a := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
-				b := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				a := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				b := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
 				Expect(dnsutils.IsEqualsRRSet(a, b)).To(BeTrue())
 			})
 		})
 		When("same (rdata is no particular order)", func() {
 			It("returns true", func() {
-				a := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
-				b := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a2, a1})
+				a := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				b := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a2, a1})
 				Expect(dnsutils.IsEqualsRRSet(a, b)).To(BeTrue())
 			})
 		})
 		When("same (ttl is ignore)", func() {
 			It("returns true", func() {
-				a := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
-				b := MustNewRRSet("example.jp", 100, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				a := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				b := MustNewRRSet("example.jp.", 100, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
 				Expect(dnsutils.IsEqualsRRSet(a, b)).To(BeTrue())
 			})
 		})
@@ -226,15 +226,15 @@ var _ = Describe("utils", func() {
 	Context("IsCompleteEqualsRRSet", func() {
 		When("ttl is ignore", func() {
 			It("returns false", func() {
-				a := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
-				b := MustNewRRSet("example.jp", 100, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				a := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				b := MustNewRRSet("example.jp.", 100, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
 				Expect(dnsutils.IsCompleteEqualsRRSet(a, b)).To(BeFalse())
 			})
 		})
 		When("same", func() {
 			It("returns false", func() {
-				a := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
-				b := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				a := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
+				b := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1, a2})
 				Expect(dnsutils.IsCompleteEqualsRRSet(a, b)).To(BeTrue())
 			})
 		})
@@ -430,13 +430,13 @@ var _ = Describe("utils", func() {
 		})
 		When("set is not nil, rdata is empty", func() {
 			It("returns true", func() {
-				set := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, nil)
+				set := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, nil)
 				Expect(dnsutils.IsEmptyRRSet(set)).To(BeTrue())
 			})
 		})
 		When("set is not nil, rdata is not empty", func() {
 			It("returns false", func() {
-				set := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1})
+				set := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{a1})
 				Expect(dnsutils.IsEmptyRRSet(set)).To(BeFalse())
 			})
 		})
@@ -522,7 +522,7 @@ var _ = Describe("utils", func() {
 	})
 	Context("GetRDATASlice", func() {
 		It("returns RDATA slice", func() {
-			set := MustNewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, []dns.RR{
+			set := MustNewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, []dns.RR{
 				MustNewRR("example.jp. 300 IN A 192.168.0.1"),
 				MustNewRR("example.jp. 300 IN A 192.168.0.2"),
 			})
@@ -535,7 +535,7 @@ var _ = Describe("utils", func() {
 			err error
 		)
 		BeforeEach(func() {
-			set, _ = dnsutils.NewRRSet("example.jp", 300, dns.ClassINET, dns.TypeA, nil)
+			set, _ = dnsutils.NewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeA, nil)
 		})
 		When("rdata is invalid", func() {
 			BeforeEach(func() {
@@ -550,7 +550,7 @@ var _ = Describe("utils", func() {
 		})
 		When("rdata is valid, but failed to AddRR", func() {
 			BeforeEach(func() {
-				set, _ = dnsutils.NewRRSet("example.jp", 300, dns.ClassINET, dns.TypeCNAME, nil)
+				set, _ = dnsutils.NewRRSet("example.jp.", 300, dns.ClassINET, dns.TypeCNAME, nil)
 				err = dnsutils.SetRdata(set, []string{"www.exampe.jp.", "www2.example.jp."})
 			})
 			It("returns ErrRdata", func() {

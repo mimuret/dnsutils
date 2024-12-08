@@ -4,7 +4,6 @@ import (
 	"crypto"
 	"fmt"
 	"io"
-	"sort"
 	"time"
 
 	"github.com/miekg/dns"
@@ -23,13 +22,15 @@ var (
 )
 
 type SignOption struct {
-	DoEMethod  DenialOfExistenceMethod
 	BeforeSign *time.Duration
 	Expiry     *time.Duration
 	Inception  *uint32
 	Expiration *uint32
 	// TODO: AddCDS     bool
 	// TODO: AddCDNSKEY bool
+	DoEMethod    DenialOfExistenceMethod
+	NSEC3Salt    string
+	NSEC3Iterate uint16
 }
 
 func (o *SignOption) GetBeforSign() time.Duration {
@@ -58,6 +59,14 @@ func (o *SignOption) GetExpiration() uint32 {
 		return uint32(time.Now().UTC().Add(o.GetExpiry()).Unix())
 	}
 	return *o.Expiration
+}
+
+func (o *SignOption) GetNSEC3Salt() string {
+	return o.NSEC3Salt
+}
+
+func (o *SignOption) GetNSEC3Iterate() uint16 {
+	return o.NSEC3Iterate
 }
 
 type DNSKEY struct {
@@ -196,89 +205,4 @@ func SignRRSet(ri RRSetInterface, opt SignOption, dnskeys []*DNSKEY) ([]*dns.RRS
 		}
 	}
 	return rrs, nil
-}
-
-func CreateDoE(z ZoneInterface, opt SignOption, generator RRSetGenerator) error {
-	if generator == nil {
-		generator = &DefaultGenerator{}
-	}
-	switch opt.DoEMethod {
-	case DenialOfExistenceMethodNSEC, "":
-		return createNSEC(z, generator)
-	}
-	return fmt.Errorf("not support: %s", opt.DoEMethod)
-}
-
-func createNSEC(z ZoneInterface, generator RRSetGenerator) error {
-	var nodes = map[string]NameNodeInterface{}
-	var names []string
-	soa, err := GetSOA(z)
-	if err != nil {
-		return ErrBadZone
-	}
-
-	zoneCuts, _, err := GetZoneCuts(z.GetRootNode())
-	if err != nil {
-		return ErrBadZone
-	}
-
-	// get next domain names
-	z.GetRootNode().IterateNameNode(func(nni NameNodeInterface) error {
-		// Blocks with no types present MUST NOT be included
-		if nni.RRSetLen() == 0 {
-			return nil
-		}
-		// A zone MUST NOT include an NSEC RR for any domain name that only holds glue records
-		parent, strict := zoneCuts.GetNameNode(nni.GetName())
-		if parent.GetName() != z.GetName() {
-			if !strict && parent.GetRRSet(dns.TypeNS) != nil {
-				return nil
-			}
-		}
-		nodes[nni.GetName()] = nni
-		names = append(names, nni.GetName())
-		return nil
-	})
-
-	sortedNames, _ := SortNames(names)
-	for i, name := range sortedNames {
-		nsec := &dns.NSEC{
-			Hdr: dns.RR_Header{
-				Name:   name,
-				Rrtype: dns.TypeNSEC,
-				Class:  dns.ClassINET,
-				// The NSEC RR SHOULD have the same TTL value as the SOA minimum TTL field.
-				// This is in the spirit of negative caching ([RFC2308]).
-				Ttl: soa.Minttl,
-			},
-			TypeBitMap: []uint16{dns.TypeRRSIG, dns.TypeNSEC},
-		}
-		if i+1 < len(sortedNames) {
-			nsec.NextDomain = sortedNames[i+1]
-		} else {
-			nsec.NextDomain = sortedNames[0]
-		}
-		rresetMap := nodes[name].CopyRRSetMap()
-		for rtype := range rresetMap {
-			switch rtype {
-			case dns.TypeRRSIG:
-			case dns.TypeNSEC:
-			default:
-				nsec.TypeBitMap = append(nsec.TypeBitMap, rtype)
-			}
-		}
-		sort.SliceStable(nsec.TypeBitMap, func(i, j int) bool { return nsec.TypeBitMap[i] < nsec.TypeBitMap[j] })
-
-		set, err := generator.NewRRSet(name, soa.Minttl, dns.ClassINET, dns.TypeNSEC)
-		if err != nil {
-			return err
-		}
-		if err := set.AddRR(nsec); err != nil {
-			return err
-		}
-		if err := nodes[name].SetRRSet(set); err != nil {
-			return err
-		}
-	}
-	return nil
 }

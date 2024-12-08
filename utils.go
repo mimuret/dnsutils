@@ -22,6 +22,9 @@ var (
 
 	// ErrBadZone
 	ErrBadZone = fmt.Errorf("invalid zone")
+
+	// Err
+	ErrEmptyRRs = fmt.Errorf("rrs is empty")
 )
 
 type Generator interface {
@@ -113,6 +116,21 @@ func IsENT(n NameNodeInterface) bool {
 	return true
 }
 
+func toRaws(rrs []dns.RR) (res sort.StringSlice, err error) {
+	var offset int
+	for _, rr := range rrs {
+		rr2 := dns.Copy(rr)
+		rr2.Header().Ttl = 0
+		var buf = make([]byte, 65535)
+		offset, err = dns.PackRR(rr2, buf, 0, nil, false)
+		if err != nil {
+			panic(err)
+		}
+		res = append(res, string(buf[0:offset]))
+	}
+	return
+}
+
 // IsEqualsRRSet check that both rrset equal.However ttl value will be ignored.
 func IsEqualsRRSet(a, b RRSetInterface) bool {
 	if a.GetName() != b.GetName() {
@@ -124,14 +142,13 @@ func IsEqualsRRSet(a, b RRSetInterface) bool {
 	if a.Len() != b.Len() {
 		return false
 	}
-	var arr, brr sort.StringSlice
-	for _, rr := range a.GetRRs() {
-		v := strings.SplitN(rr.String(), "\t", 5)
-		arr = append(arr, v[4])
+	arr, err := toRaws(a.GetRRs())
+	if err != nil {
+		return false
 	}
-	for _, rr := range b.GetRRs() {
-		v := strings.SplitN(rr.String(), "\t", 5)
-		brr = append(brr, v[4])
+	brr, err := toRaws(b.GetRRs())
+	if err != nil {
+		return false
 	}
 	arr.Sort()
 	brr.Sort()
@@ -505,4 +522,47 @@ func GetSOA(z ZoneInterface) (*dns.SOA, error) {
 		return nil, ErrBadZone
 	}
 	return soa, nil
+}
+
+func NewRRSetFromRRsWithGenerator(rrs []dns.RR, generator RRSetGenerator) (RRSetInterface, error) {
+	if len(rrs) == 0 {
+		return nil, ErrEmptyRRs
+	}
+	rr := rrs[0]
+	rrset, err := generator.NewRRSet(rr.Header().Name, rr.Header().Ttl, dns.Class(rr.Header().Class), rr.Header().Rrtype)
+	if err != nil {
+		return nil, err
+	}
+	for _, rr := range rrs {
+		if err := rrset.AddRR(rr); err != nil {
+			return nil, fmt.Errorf("failed to add rr: %w", err)
+		}
+	}
+	return rrset, nil
+}
+
+func NewRRSetFromRRWithGenerator(rr dns.RR, generator RRSetGenerator) (RRSetInterface, error) {
+	return NewRRSetFromRRsWithGenerator([]dns.RR{rr}, generator)
+}
+
+func CreateOrReplaceRRSetFromRRs(ni NameNodeInterface, rrs []dns.RR, generator Generator) error {
+	if len(rrs) == 0 {
+		return ErrEmptyRRs
+	}
+	rr := rrs[0]
+	targetNode, err := GetNameNodeOrCreate(ni, rr.Header().Name, generator)
+	if err != nil {
+		return fmt.Errorf("failed to create node: %w", err)
+	}
+	rrSet, err := NewRRSetFromRRsWithGenerator(rrs, generator)
+	if err != nil {
+		return fmt.Errorf("failed to create rrset: %w", err)
+	}
+	if err := targetNode.SetRRSet(rrSet); err != nil {
+		return fmt.Errorf("failed to set rrset: %w", err)
+	}
+	if err := SetNameNode(ni, targetNode, generator); err != nil {
+		return fmt.Errorf("failed to set node: %w", err)
+	}
+	return nil
 }
