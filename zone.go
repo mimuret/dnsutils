@@ -78,6 +78,10 @@ func (z *Zone) Read(r io.Reader) error {
 		z.name = dns.CanonicalName(soa.Header().Name)
 		z.root, _ = z.generator.NewNameNode(z.name, z.class)
 	}
+	return z.ImportRRs(rrs)
+}
+
+func (z *Zone) ImportRRs(rrs []dns.RR) error {
 	for _, rr := range rrs {
 		if !dns.IsSubDomain(z.GetName(), rr.Header().Name) {
 			return fmt.Errorf("%s out of zone data", rr.Header().Name)
@@ -101,14 +105,7 @@ func (z *Zone) Read(r io.Reader) error {
 }
 
 func (z *Zone) Text(w io.Writer) {
-	z.GetRootNode().IterateNameNode(func(nni NameNodeInterface) error {
-		return nni.IterateNameRRSet(func(set RRSetInterface) error {
-			for _, rr := range set.GetRRs() {
-				w.Write([]byte(rr.String() + "\n"))
-			}
-			return nil
-		})
-	})
+	ZoneText(z, w)
 }
 
 // UnmarshalJSON reads zone data from json.RawMessage.
@@ -170,6 +167,17 @@ func (z *Zone) MarshalJSON() ([]byte, error) {
 		})
 	})
 	return json.Marshal(v)
+}
+
+func ZoneText(z ZoneInterface, w io.Writer) {
+	z.GetRootNode().IterateNameNode(func(nni NameNodeInterface) error {
+		return nni.IterateNameRRSet(func(set RRSetInterface) error {
+			for _, rr := range set.GetRRs() {
+				w.Write([]byte(rr.String() + "\n"))
+			}
+			return nil
+		})
+	})
 }
 
 func ZoneNormalize(z ZoneInterface) error {

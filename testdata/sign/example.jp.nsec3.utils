@@ -1,0 +1,40 @@
+example.jp.     3600    IN      SOA     localhost. root.localhost. 1 3600 900 85400 300
+example.jp.     3600    IN      NS      ns1.example.com.
+example.jp.     3600    IN      NS      ns2.example.com.
+example.jp.     3600    IN      RRSIG   SOA 15 2 3600 20300101000000 20240101000000 30075 example.jp. PcVTNCpT8BCRuzafQWNNjw1bM/aLS0QzBY3KhXXLTUcm5KQ3pDG/r51Cb/OYCgtj376OMaPc91P/7dYOEcV0Cw==
+example.jp.     3600    IN      RRSIG   NS 15 2 3600 20300101000000 20240101000000 30075 example.jp. BI2SECx/MMKOYL7GZ2oR9Urji7WSHwAbI+jsCmDocmtgI6eaBD92jkg0R8FNfkZZrUQtH6XMiGneui91aJtXAQ==
+example.jp.     3600    IN      RRSIG   DNSKEY 15 2 3600 20300101000000 20240101000000 2290 example.jp. 16BbRlcvKVwpedvQFC6X1fa8U9jgnaLgMLc8URouI26Co10f6+mqy7ENn5Ox7yeXWLIUaLygiC2P1wqUavEsCQ==
+example.jp.     0       IN      RRSIG   NSEC3PARAM 15 2 0 20300101000000 20240101000000 30075 example.jp. Y2u18chHyhPkGvj783jr0nDid77q5SWWiIN7n5gWD44xl6RVpu8MhKgFtsBSXAq+aP14cAGBE3LJKa4c8l2jAw==
+example.jp.     3600    IN      DNSKEY  257 3 15 8MzVeexk/3vOxj/fo23fg5cCY3C0Spv7EdRtRvpA/Q0=
+example.jp.     3600    IN      DNSKEY  256 3 15 T0PxgSllGIc1q9d/47+anAR5i5rXl7vxAb3G+UHENRs=
+example.jp.     0       IN      NSEC3PARAM      1 0 0 -
+\000.example.jp.        3600    IN      TXT     "hoge"
+\000.example.jp.        3600    IN      RRSIG   TXT 15 3 3600 20300101000000 20240101000000 30075 example.jp. a0I4CzNCRLO7GOYPfhQMvtVic3pq0ru3pUCHojnE9pdxof4f8mzG3yaPp1seYlgTRakAYn262EBA4N5X0zMCBQ==
+*.example.jp.   3600    IN      A       172.16.0.1
+*.example.jp.   3600    IN      RRSIG   A 15 2 3600 20300101000000 20240101000000 30075 example.jp. GMErAifQAOCv9yXKpicFB8DR7mFUX+zTfwVZTtf/e/afoTgtlAxTQ7ri2+M8nbdAzAs1GflJsicZkUKSF0soAw==
+6gprlq591hrea6jeu56vjb28d1fn4n6v.example.jp.    300     IN      RRSIG   NSEC3 15 3 300 20300101000000 20240101000000 30075 example.jp. TOF0Qvx3bLuNTRl3f6bT399rWrMOURuDLKh6YV91l+3ULKcn48E845Zq9UjrN8AQKcZyU4BkZTwQUMGzmR1QCQ==
+6gprlq591hrea6jeu56vjb28d1fn4n6v.example.jp.    300     IN      NSEC3   1 0 0 - gqraus1mh275vkh5ilbm6n4m6o51psfe A RRSIG
+gqraus1mh275vkh5ilbm6n4m6o51psfe.example.jp.    300     IN      RRSIG   NSEC3 15 3 300 20300101000000 20240101000000 30075 example.jp. odQeA25Q/X7AbNR1HsmGo9hpBwpTVTlVLQaiXRSBvyjp7z22+D/VE9RV5Dfg68G7Qe3f28FE+uRHP9+q2FPyCA==
+gqraus1mh275vkh5ilbm6n4m6o51psfe.example.jp.    300     IN      NSEC3   1 0 0 - jj65a7eb207tje77qkts10r694o7idp1 NS DS RRSIG
+test.hoge.example.jp.   3600    IN      A       192.168.2.2
+test.hoge.example.jp.   3600    IN      RRSIG   A 15 4 3600 20300101000000 20240101000000 30075 example.jp. BVU4c54zo5KG756G1IJ6v83ttZZG1D8Nf5XmZtCx6Li0+BdrzyRcA3Yg5FmIe5tH8T82AJ2rIcXOdgKIAJYzBQ==
+www.hoge.example.jp.    3600    IN      CNAME   www.example.net.
+www.hoge.example.jp.    3600    IN      RRSIG   CNAME 15 4 3600 20300101000000 20240101000000 30075 example.jp. 9pvgYw80D1LCv3RmVpJjjj6wnnviK3FT9NywIgsT6p9eVP6rWrYvnduMKxbFfyM1gCIESoG/x9VWe/890I67Cw==
+jj65a7eb207tje77qkts10r694o7idp1.example.jp.    300     IN      RRSIG   NSEC3 15 3 300 20300101000000 20240101000000 30075 example.jp. grxT/jSRAf4As5TC8rzaRzV7+ZJAb09N/IPZQN+h6mcmfvUdz5TOxdS+xvXylWO4gjG3+5zww1QKyupJCY+QDA==
+jj65a7eb207tje77qkts10r694o7idp1.example.jp.    300     IN      NSEC3   1 0 0 - k05vsr58oenvk865880iplgofcn6dvk9
+k05vsr58oenvk865880iplgofcn6dvk9.example.jp.    300     IN      RRSIG   NSEC3 15 3 300 20300101000000 20240101000000 30075 example.jp. VR9mthJCEdnbtJ37tMHlHRJAtrp/UsdhyDCTqMUctrDaWYVrIE0zM3hh05bGCaqUtpAtnUic1LsHZYNtbaQQAA==
+k05vsr58oenvk865880iplgofcn6dvk9.example.jp.    300     IN      NSEC3   1 0 0 - o460govu7slc9agf8cpb1tlon6hf2bg8 A RRSIG
+o460govu7slc9agf8cpb1tlon6hf2bg8.example.jp.    300     IN      RRSIG   NSEC3 15 3 300 20300101000000 20240101000000 30075 example.jp. hM8OTWsIDemeNATTApiPMJ9Y5xJhHttyx4v9TnEBbmsDrImcxe+sTALQL+dASw18IPHgOkk129hFnVgyuz3+Dg==
+o460govu7slc9agf8cpb1tlon6hf2bg8.example.jp.    300     IN      NSEC3   1 0 0 - tdtjgpsab0dpscg7hq5g178cbhs9njjq CNAME RRSIG
+sub1.example.jp.        3600    IN      NS      ns.sub1.example.jp.
+sub1.example.jp.        3600    IN      DS      1 8 2 41AD6EC23454A202D05BD75D9C323825C9822B9850CB1793CAB2DA2814C74140
+sub1.example.jp.        3600    IN      RRSIG   DS 15 3 3600 20300101000000 20240101000000 30075 example.jp. 2JVtApeFm2lITlm+iweV09lON+FAfC8nT5+oq7pq1ByEfMtQyCMpJerK6priAJA774fli3CtTuw9Mny2+jrbBg==
+ns.sub1.example.jp.     3600    IN      A       192.168.0.1
+sub2.example.jp.        3600    IN      NS      ns.sub2.example.jp.
+ns.sub2.example.jp.     3600    IN      A       192.168.0.1
+tdtjgpsab0dpscg7hq5g178cbhs9njjq.example.jp.    300     IN      RRSIG   NSEC3 15 3 300 20300101000000 20240101000000 30075 example.jp. 1r764SWVDpUiujEr+fYkt8b8aXigSmSZokrSjKYHkFih7CB5BJpmNifT9OuKGYgrSxJoCacY8nBFiColCnSHBQ==
+tdtjgpsab0dpscg7hq5g178cbhs9njjq.example.jp.    300     IN      NSEC3   1 0 0 - u4qi2240g6u8ufsujh7og13smtofb1i8 NS SOA RRSIG DNSKEY NSEC3PARAM
+u4qi2240g6u8ufsujh7og13smtofb1i8.example.jp.    300     IN      RRSIG   NSEC3 15 3 300 20300101000000 20240101000000 30075 example.jp. GiCQI7teilzT8jqLXVET89z7AfqdLSEzk/jT6xIKXMZs+Y1lIFgi83m6Rk2okpGemuKN0JY89VhJ54UCg/aQBA==
+u4qi2240g6u8ufsujh7og13smtofb1i8.example.jp.    300     IN      NSEC3   1 0 0 - vtlmk2o3ov7j67jml7bpppncs8si7kqv NS
+vtlmk2o3ov7j67jml7bpppncs8si7kqv.example.jp.    300     IN      RRSIG   NSEC3 15 3 300 20300101000000 20240101000000 30075 example.jp. ANp7pPlQikguq9R0JHx/2xegPE1Zgf5/P3LuqwX1PVwebm38TzrZwSLnXwOyyg9x4zsm0YNrOaEgSkyQN62rCw==
+vtlmk2o3ov7j67jml7bpppncs8si7kqv.example.jp.    300     IN      NSEC3   1 0 0 - 6gprlq591hrea6jeu56vjb28d1fn4n6v TXT RRSIG

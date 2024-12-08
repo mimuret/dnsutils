@@ -43,7 +43,7 @@ func NewTestUpdate() *TestUpdate {
 
 func (u *TestUpdate) GetZone(*dns.Msg) (dnsutils.ZoneInterface, error) {
 	buf := bytes.NewBuffer(zonefile)
-	zone, _ := dnsutils.NewZone("example.jp", dns.ClassINET, nil)
+	zone, _ := dnsutils.NewZone("example.jp.", dns.ClassINET, nil)
 	if err := zone.Read(buf); err != nil {
 		return nil, err
 	}

@@ -6,29 +6,28 @@ import (
 	"errors"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/mimuret/dnsutils"
 	"github.com/mimuret/dnsutils/testtool"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-//go:embed testdata/example.jp.sign
+//go:embed testdata/sign/example.jp.source
 var testSignZone []byte
 
-//go:embed testdata/example.jp.nsec
+//go:embed testdata/sign/example.jp.nsec.bind
 var testNsecSignedZone []byte
 
-//go:embed testdata/keys/Kexample.jp.+015+02290.private
+//go:embed testdata/sign/keys/Kexample.jp.+015+02290.private
 var testDnskeyED25519KSKPriv []byte
 
-//go:embed testdata/keys/Kexample.jp.+015+02290.key
+//go:embed testdata/sign/keys/Kexample.jp.+015+02290.key
 var testDnskeyED25519KSKPub []byte
 
-//go:embed testdata/keys/Kexample.jp.+015+30075.private
+//go:embed testdata/sign/keys/Kexample.jp.+015+30075.private
 var testDnskeyED25519ZSKPriv []byte
 
-//go:embed testdata/keys/Kexample.jp.+015+30075.key
+//go:embed testdata/sign/keys/Kexample.jp.+015+30075.key
 var testDnskeyED25519ZSKPub []byte
 
 var _ = Describe("Test sign.go", func() {
@@ -183,32 +182,6 @@ var _ = Describe("Test sign.go", func() {
 			It("succeed", func() {
 				Expect(err).To(Succeed())
 			})
-		})
-	})
-	Context("CreateDoE", func() {
-		BeforeEach(func() {
-			testZoneNormalBuf := bytes.NewBuffer(testSignZone)
-			z = &dnsutils.Zone{}
-			err = z.Read(testZoneNormalBuf)
-			Expect(err).To(Succeed())
-			err = dnsutils.CreateDoE(z, nsecSignOption, nil)
-		})
-		It("return success", func() {
-			Expect(err).To(Succeed())
-			var nsecRRs []dns.RR
-			z.GetRootNode().IterateNameNode(func(nni dnsutils.NameNodeInterface) error {
-				if nsecRRSet := nni.GetRRSet(dns.TypeNSEC); nsecRRSet != nil {
-					nsecRRs = append(nsecRRs, nsecRRSet.GetRRs()...)
-				}
-				return nil
-			})
-			Expect(nsecRRs[0]).To(Equal(testtool.MustNewRR("example.jp. 300 IN NSEC \\000.example.jp. NS SOA RRSIG NSEC")))
-			Expect(nsecRRs[1]).To(Equal(testtool.MustNewRR("\\000.example.jp. 300 IN NSEC *.example.jp. TXT RRSIG NSEC")))
-			Expect(nsecRRs[2]).To(Equal(testtool.MustNewRR("*.example.jp. 300 IN NSEC test.hoge.example.jp. A RRSIG NSEC")))
-			Expect(nsecRRs[3]).To(Equal(testtool.MustNewRR("test.hoge.example.jp. 300 IN NSEC www.hoge.example.jp. A RRSIG NSEC")))
-			Expect(nsecRRs[4]).To(Equal(testtool.MustNewRR("www.hoge.example.jp. 300 IN NSEC sub1.example.jp. CNAME RRSIG NSEC")))
-			Expect(nsecRRs[5]).To(Equal(testtool.MustNewRR("sub1.example.jp. 300 IN NSEC sub2.example.jp. NS DS RRSIG NSEC")))
-			Expect(nsecRRs[6]).To(Equal(testtool.MustNewRR("sub2.example.jp. 300 IN NSEC example.jp. NS RRSIG NSEC")))
 		})
 	})
 	Context("Test for Sign", func() {

@@ -150,7 +150,9 @@ func (r *RRSet) AddRR(rr dns.RR) error {
 			return nil
 		}
 	}
-	r.rrs = append(r.rrs, rr)
+	rr1 := dns.Copy(rr)
+	rr1.Header().Name = dns.CanonicalName(rr1.Header().Name)
+	r.rrs = append(r.rrs, rr1)
 	return nil
 }
 
@@ -171,6 +173,10 @@ func (r *RRSet) RemoveRR(rr dns.RR) error {
 func (r *RRSet) Copy() RRSetInterface {
 	copy := &RRSet{}
 	*copy = *r
+	copy.rrs = make([]dns.RR, 0, len(copy.rrs))
+	for _, rr := range r.GetRRs() {
+		copy.rrs = append(copy.rrs, dns.Copy(rr))
+	}
 	return copy
 }
 
