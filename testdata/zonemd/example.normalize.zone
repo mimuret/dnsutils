@@ -1,0 +1,28 @@
+$ORIGIN example.
+example.      86400  IN  SOA     NS1 Admin 2018031900 (
+                                1800 900 604800 86400 )
+              86400  IN  NS      ns1
+              86400  IN  NS      ns2
+ns1           3600   IN  A       203.0.113.63
+ns2           3600   IN  AAAA    2001:db8::63
+md            3600   IN  MD      MDName
+MF            3600   IN  MF      MFNAME
+CNAME         3600   IN  CNAME   cNamE
+MB            3600   IN  MB      MBName
+Mg            3600   IN  MG      MGName
+Mr            3600   IN  MR      MRName
+ptr           3600   IN  PTR     PTR
+MINFO         3600   IN  MINFO   RMAILBX EMAILBX
+MX            3600   IN  MX 0    Mx2
+RP            3600   IN  RP hgeO huga
+AFSDB         3600   IN AFSDB 0 Hoeg
+RT            3600   IN RT 0 HoeRT
+sig           3600   IN SIG NSEC3 8 2 900 20250106174503 20241207174503 44679 EXAMPLE. jh6n+WeGSk7fZ1GUUAbAiyA0bB4zzFpJsoowHUgFtuhOvomIwbazkX1B kH84OJ+6SwYpLw78IEwuM/hnk5ei4lkGf33NhV2xtjAHdPZKQeR3PwvF p81yxSPfzeRSlBXRkQFAf2y3y/E++qO0q8raDvdy/OemVmjJcTpmJPJd /3U=
+px            3600   IN PX 0 Px B.
+NAPTR         3600   IN NAPTR 100  50  "s"  "z3950+I2L+I2C"     ""  _z3950._tcp.gatech.EDU.
+KX            3600   IN KX 65535 EXMAPLE.
+srv           3600   IN SRV	65535 65535 65535  SrV
+Dname         3600   IN DNAME hogeHoge
+RRSIG         3600   IN RRSIG A 13 2 28800 20250105103725 20241205103725 22902 ExAmple. /eWTI4l4eCHAtqBGJr6XbHV16zhEE5/DkmcSsY06k1Le0M+1k8vS+zyV 0hFGI3GN/zzp6R2PC6qCpI6GDOS/Vw==
+NSEC          3600   IN NSEC exAmple. NSEC
+24jbkp4jp5u5kmsr7icppnjnv91t6jlm 900 IN NSEC3 1 0 0 - 2bTGF49ID4OT6MEU92R614CIJKB2KAAJ NS DS RRSIG

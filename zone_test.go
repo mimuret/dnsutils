@@ -99,6 +99,8 @@ var _ = Describe("Zone", func() {
 				testZoneNormalBuf := bytes.NewBuffer(testZoneNormalize)
 				z = &dnsutils.Zone{}
 				err = z.Read(testZoneNormalBuf)
+				Expect(err).To(Succeed())
+				err = dnsutils.ZoneNormalize(z)
 			})
 			It("can read data", func() {
 				Expect(err).To(Succeed())
@@ -211,6 +213,27 @@ var _ = Describe("Zone", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(MatchRegexp("failed to set node"))
 			})
+		})
+	})
+	Context("Test for ZoneText", func() {
+		var (
+			b *bytes.Buffer
+		)
+		BeforeEach(func() {
+			testZoneNormalBuf := bytes.NewBuffer(testZoneNormal)
+			z = &dnsutils.Zone{}
+			err = z.Read(testZoneNormalBuf)
+			Expect(err).To(Succeed())
+			b = bytes.NewBuffer(nil)
+			err = dnsutils.ZoneText(z, b)
+
+		})
+		It("returns", func() {
+			Expect(err).To(Succeed())
+			z2 := &dnsutils.Zone{}
+			err := z2.Read(b)
+			Expect(err).To(Succeed())
+			Expect(dnsutils.IsEqualsAllTree(z.GetRootNode(), z2.GetRootNode(), true)).To(BeTrue())
 		})
 	})
 	Context("Test for MarshalJSON", func() {

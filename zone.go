@@ -101,11 +101,11 @@ func (z *Zone) ImportRRs(rrs []dns.RR) error {
 			return fmt.Errorf("failed to set node: %w", err)
 		}
 	}
-	return ZoneNormalize(z)
+	return nil
 }
 
-func (z *Zone) Text(w io.Writer) {
-	ZoneText(z, w)
+func (z *Zone) Text(w io.Writer) error {
+	return ZoneText(z, w)
 }
 
 // UnmarshalJSON reads zone data from json.RawMessage.
@@ -169,14 +169,12 @@ func (z *Zone) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v)
 }
 
-func ZoneText(z ZoneInterface, w io.Writer) {
-	z.GetRootNode().IterateNameNode(func(nni NameNodeInterface) error {
-		return nni.IterateNameRRSet(func(set RRSetInterface) error {
-			for _, rr := range set.GetRRs() {
-				w.Write([]byte(rr.String() + "\n"))
-			}
-			return nil
-		})
+func ZoneText(z ZoneInterface, w io.Writer) error {
+	return IterateRRInZone(z, func(rr dns.RR) error {
+		if _, err := w.Write([]byte(rr.String() + "\n")); err != nil {
+			return err
+		}
+		return nil
 	})
 }
 
@@ -234,4 +232,14 @@ func GetZoneCuts(rootNode NameNodeInterface) (NameNodeInterface, map[string]stru
 		return nil, nil, err
 	}
 	return zoneCuts, delegateNS, nil
+}
+
+func IterateRRInZone(z ZoneInterface, f func(dns.RR) error) error {
+	return SortedIterateNameNode(z.GetRootNode(), func(nni NameNodeInterface) error {
+		return SortedIterateRRset(nni, func(set RRSetInterface) error {
+			return SortedIterateRR(set, func(rr dns.RR) error {
+				return f(rr)
+			})
+		})
+	})
 }

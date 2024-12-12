@@ -1,0 +1,27 @@
+example.	86400	IN	NS	ns1.example.
+example.	86400	IN	NS	ns2.example.
+example.	86400	IN	SOA	ns1.example. admin.example. 2018031900 1800 900 604800 86400
+example.	86400	IN	ZONEMD	2018031900 1 1 f3ee6ced3a4af3dc0c82abef485311482218da9649af8b6c332c4fd2dd31a44a8e48f8b8e4717db08e244e0a26a020d7
+24jbkp4jp5u5kmsr7icppnjnv91t6jlm.example.	900	IN	NSEC3	1 0 0 -  2btgf49id4ot6meu92r614cijkb2kaaj NS DS RRSIG 
+afsdb.example.	3600	IN	AFSDB	0 hoeg.example.
+cname.example.	3600	IN	CNAME	cname.example.
+dname.example.	3600	IN	DNAME	hogehoge.example.
+kx.example.	3600	IN	KX	65535 exmaple.
+mb.example.	3600	IN	MB	mbname.example.
+md.example.	3600	IN	MD	mdname.example.
+mf.example.	3600	IN	MF	mfname.example.
+mg.example.	3600	IN	MG	mgname.example.
+minfo.example.	3600	IN	MINFO	rmailbx.example. emailbx.example.
+mr.example.	3600	IN	MR	mrname.example.
+mx.example.	3600	IN	MX	0 mx2.example.
+naptr.example.	3600	IN	NAPTR	100 50 "s" "z3950+I2L+I2C" "" _z3950._tcp.gatech.edu.
+ns1.example.	3600	IN	A	203.0.113.63
+ns2.example.	3600	IN	AAAA	2001:db8::63
+nsec.example.	3600	IN	NSEC	example. NSEC 
+ptr.example.	3600	IN	PTR	ptr.example.
+px.example.	3600	IN	PX	0 px.example. b.
+rp.example.	3600	IN	RP	hgeo.example. huga.example.
+rrsig.example.	3600	IN	RRSIG	A 13 2 28800 20250105103725 20241205103725 22902 example. /eWTI4l4eCHAtqBGJr6XbHV16zhEE5/DkmcSsY06k1Le0M+1k8vS+zyV0hFGI3GN/zzp6R2PC6qCpI6GDOS/Vw==
+rt.example.	3600	IN	RT	0 hoert.example.
+sig.example.	3600	IN	SIG	NSEC3 8 2 900 20250106174503 20241207174503 44679 example. jh6n+WeGSk7fZ1GUUAbAiyA0bB4zzFpJsoowHUgFtuhOvomIwbazkX1BkH84OJ+6SwYpLw78IEwuM/hnk5ei4lkGf33NhV2xtjAHdPZKQeR3PwvFp81yxSPfzeRSlBXRkQFAf2y3y/E++qO0q8raDvdy/OemVmjJcTpmJPJd/3U=
+srv.example.	3600	IN	SRV	65535 65535 65535 srv.example.

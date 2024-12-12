@@ -1,16 +1,13 @@
 package dnsutils
 
 import (
-	"bytes"
 	"fmt"
-	"slices"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/miekg/dns"
-	"github.com/mimuret/intcast"
-	"golang.org/x/exp/constraints"
 )
 
 var (
@@ -51,61 +48,6 @@ func (DefaultGenerator) NewRRSet(name string, ttl uint32, class dns.Class, rrtyp
 	return NewRRSet(name, ttl, class, rrtype, nil)
 }
 
-func isBorderChar(t byte) bool {
-	return (t >= '0' && t <= '9') ||
-		(t >= 'a' && t <= 'z') ||
-		(t >= 'A' && t <= 'Z')
-}
-
-func isMiddleChar(t byte) bool {
-	return isBorderChar(t) || t == '-'
-}
-
-// IsHostname checks if name is a valid RFC1123 hostname.
-func IsHostname(name string) bool {
-	buf := make([]byte, 255)
-	offset, err := dns.PackDomainName(dns.CanonicalName(name), buf, 0, nil, false)
-	if err != nil {
-		// Not domain name
-		return false
-	}
-	var i byte
-	for i < byte(offset) {
-		labelLen := buf[i]
-		i++
-		for j := byte(0); j < labelLen; j++ {
-			if j == 0 || j == labelLen-1 {
-				if !isBorderChar(buf[i+j]) {
-					return false
-				}
-			} else {
-				if !isMiddleChar(buf[i+j]) {
-					return false
-				}
-			}
-		}
-		i += labelLen
-	}
-	return true
-}
-
-// Equals check that both names are equal.
-// Input names can accept non-normalized name.
-func Equals(a, b string) bool {
-	bufa := make([]byte, 255)
-	bufb := make([]byte, 255)
-	_, err := dns.PackDomainName(dns.CanonicalName(a), bufa, 0, nil, false)
-	if err != nil {
-		return false
-	}
-	_, err = dns.PackDomainName(dns.CanonicalName(b), bufb, 0, nil, false)
-	if err != nil {
-		return false
-	}
-
-	return bytes.Equal(bufa, bufb)
-}
-
 // IsENT check that node is empty non terminal.
 func IsENT(n NameNodeInterface) bool {
 	for _, set := range n.CopyRRSetMap() {
@@ -121,7 +63,7 @@ func toRaws(rrs []dns.RR) (res sort.StringSlice, err error) {
 	for _, rr := range rrs {
 		rr2 := dns.Copy(rr)
 		rr2.Header().Ttl = 0
-		var buf = make([]byte, 65535)
+		var buf = make([]byte, math.MaxUint16)
 		offset, err = dns.PackRR(rr2, buf, 0, nil, false)
 		if err != nil {
 			panic(err)
@@ -381,137 +323,6 @@ func MakeRR(r RRSetInterface, rdata string) (dns.RR, error) {
 	return dns.NewRR(r.GetName() + "\t" + strconv.FormatInt(int64(r.GetTTL()), 10) + "\t" + dns.ClassToString[uint16(r.GetClass())] + "\t" + dns.TypeToString[r.GetRRtype()] + "\t" + rdata)
 }
 
-// ConvertStringToType returns uint16 dns rrtype by string
-// If it failed to parse, returns ErrInvalid
-func ConvertStringToType(s string) (uint16, error) {
-	return ConvertToStringToNumber(dns.StringToType, "TYPE", s)
-}
-
-// ConvertStringToClass returns dns.Class by string
-// If it failed to parse, returns ErrInvalid
-func ConvertStringToClass(s string) (dns.Class, error) {
-	class, err := ConvertToStringToNumber(dns.StringToClass, "CLASS", s)
-	return dns.Class(class), err
-}
-
-func ConvertToStringToNumber[T constraints.Integer](def map[string]T, prefix, s string) (T, error) {
-	var (
-		t  T
-		ok bool
-	)
-	if t, ok = def[s]; ok {
-		return t, nil
-	}
-	if strings.HasPrefix(s, prefix) {
-		v := strings.TrimLeft(s, prefix)
-		res, err := strconv.ParseUint(v, 10, 64)
-		if err != nil {
-			return 0, ErrInvalid
-		}
-		if err := intcast.Cast(res, &t); err != nil {
-			return 0, ErrInvalid
-		}
-		return t, nil
-	}
-	return 0, ErrInvalid
-}
-
-// ConvertTypeToString returns RRType string by uint16 dns rrtype.
-func ConvertTypeToString(i uint16) string {
-	return ConvertNumberToString(dns.TypeToString, "TYPE", i)
-}
-
-// ConvertClassToString returns DNS Class string by dns.Class
-func ConvertClassToString(i dns.Class) string {
-	return ConvertNumberToString(dns.ClassToString, "CLASS", uint16(i))
-}
-
-func ConvertNumberToString[T constraints.Integer](def map[T]string, prefix string, i T) string {
-	if s, ok := def[i]; ok {
-		return s
-	}
-	return prefix + strconv.FormatUint(uint64(i), 10)
-}
-
-// GetAllParentNames returns a name slice containing parent names and itself.
-func GetAllParentNames(name string, level uint) ([]string, bool) {
-	_, ok := dns.IsDomainName(name)
-	if !ok {
-		return nil, false
-	}
-	names := []string{}
-	labels := dns.SplitDomainName(name)
-	for i := len(labels) - int(level) - 1; i >= 0; i-- {
-		names = append(names, dns.CanonicalName(strings.Join(labels[i:], ".")))
-	}
-	return names, true
-}
-
-// https://datatracker.ietf.org/doc/html/rfc4034#section-6.1
-// SortNamesFunc returns sorted names
-func SortNames(names []string) ([]string, error) {
-	var err error
-	sort.SliceStable(names, func(i, j int) bool {
-		cmp, cErr := CompareName(names[i], names[j])
-		if cErr != nil {
-			err = cErr
-		}
-		return cmp < 0
-	})
-	if err != nil {
-		return nil, err
-	}
-	return names, nil
-}
-
-func SplitLabelsBytes(name string) ([][]byte, error) {
-	buf := make([]byte, 255)
-	offset, err := dns.PackDomainName(name, buf, 0, nil, false)
-	if err != nil {
-		return nil, ErrBadName
-	}
-	var res [][]byte
-	var i byte
-	for i < byte(offset) {
-		labelLen := buf[i]
-		if labelLen == 0 {
-			break
-		}
-		i++
-		label := make([]byte, labelLen)
-		copy(label, buf[i:i+labelLen])
-		res = append(res, label)
-		i = i + labelLen
-	}
-	return res, nil
-}
-
-// The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
-func CompareName(a, b string) (int, error) {
-	al, err := SplitLabelsBytes(dns.CanonicalName(a))
-	if err != nil {
-		return 0, ErrBadName
-	}
-	bl, err := SplitLabelsBytes(dns.CanonicalName(b))
-	if err != nil {
-		return 0, ErrBadName
-	}
-	slices.Reverse(al)
-	slices.Reverse(bl)
-	for i := 0; i < len(al) && i < len(bl); i++ {
-		if res := bytes.Compare(al[i], bl[i]); res != 0 {
-			return res, nil
-		}
-	}
-	if len(al) == len(bl) {
-		return 0, nil
-	}
-	if len(al) > len(bl) {
-		return 1, nil
-	}
-	return -1, nil
-}
-
 func GetSOA(z ZoneInterface) (*dns.SOA, error) {
 	soaRRSet := z.GetRootNode().GetRRSet(dns.TypeSOA)
 	if soaRRSet == nil {
@@ -525,6 +336,9 @@ func GetSOA(z ZoneInterface) (*dns.SOA, error) {
 }
 
 func NewRRSetFromRRsWithGenerator(rrs []dns.RR, generator RRSetGenerator) (RRSetInterface, error) {
+	if generator == nil {
+		generator = DefaultGenerator{}
+	}
 	if len(rrs) == 0 {
 		return nil, ErrEmptyRRs
 	}
@@ -563,6 +377,55 @@ func CreateOrReplaceRRSetFromRRs(ni NameNodeInterface, rrs []dns.RR, generator G
 	}
 	if err := SetNameNode(ni, targetNode, generator); err != nil {
 		return fmt.Errorf("failed to set node: %w", err)
+	}
+	return nil
+}
+
+func SortedIterateNameNode(nni NameNodeInterface, f func(NameNodeInterface) error) error {
+	nodeMap := map[string]NameNodeInterface{}
+	nodeNames := []string{}
+	nni.IterateNameNode(func(nni NameNodeInterface) error {
+		nodeMap[nni.GetName()] = nni
+		nodeNames = append(nodeNames, nni.GetName())
+		return nil
+	})
+	SortNames(nodeNames)
+	for _, name := range nodeNames {
+		err := f(nodeMap[name])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// asc
+func SortedIterateRRset(nni NameNodeInterface, f func(RRSetInterface) error) error {
+	rrSets := nni.CopyRRSetMap()
+	rrtypes := make([]uint16, 0, len(rrSets))
+	for rrtype := range rrSets {
+		rrtypes = append(rrtypes, rrtype)
+	}
+	sort.Slice(rrtypes, func(i, j int) bool { return rrtypes[i] < rrtypes[j] })
+	for _, rrtype := range rrtypes {
+		err := f(nni.GetRRSet(uint16(rrtype)))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SortedIterateRR(set RRSetInterface, f func(dns.RR) error) error {
+	rrs := set.GetRRs()
+	if err := SortRRs(rrs); err != nil {
+		return fmt.Errorf("failed to sort RR: %w", err)
+	}
+	for _, rr := range rrs {
+		err := f(rr)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
