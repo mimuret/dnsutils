@@ -1,0 +1,19 @@
+example.	86400	IN	NS	ns1.example.
+example.	86400	IN	NS	ns2.example.
+example.	86400	IN	SOA	ns1.example. admin.example. 2018031900 1800 900 604800 86400
+example.	86400	IN	ZONEMD	2018031900 1 1 a3b69bad980a3504e1cffcb0fd6397f93848071c93151f552ae2f6b1711d4bd2d8b39808226d7b9db71e34b72077f8fe
+*.example.	777	IN	PTR	dont-forget-about-wildcards.example.
+duplicate.example.	300	IN	TXT	"I must be digested just once"
+mail.example.	3600	IN	MX	10 mail2.example.
+mail.example.	3600	IN	MX	20 mail1.example.
+non-apex.example.	900	IN	ZONEMD	2018031900 1 1 616c6c6f776564206275742069676e6f7265642e20616c6c6f776564206275742069676e6f7265642e20616c6c6f7765
+ns1.example.	3600	IN	A	203.0.113.63
+ns2.example.	3600	IN	AAAA	2001:db8::63
+sortme.example.	3600	IN	AAAA	2001:db8::1:65
+sortme.example.	3600	IN	AAAA	2001:db8::2:64
+sortme.example.	3600	IN	AAAA	2001:db8::3:62
+sortme.example.	3600	IN	AAAA	2001:db8::4:63
+sortme.example.	3600	IN	AAAA	2001:db8::5:61
+sub.example.	7200	IN	NS	ns1.example.
+occluded.sub.example.	7200	IN	TXT	"I'm occluded but must be digested"
+uppercase.example.	3600	IN	TXT	"canonicalize uppercase owner names"

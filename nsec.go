@@ -25,6 +25,9 @@ func CreateDoE(z ZoneInterface, opt SignOption, generator Generator) error {
 func createNSEC(z ZoneInterface, generator RRSetGenerator) error {
 	var nodes = map[string]NameNodeInterface{}
 	var names []string
+	if generator == nil {
+		generator = &DefaultGenerator{}
+	}
 	soa, err := GetSOA(z)
 	if err != nil {
 		return ErrBadZone

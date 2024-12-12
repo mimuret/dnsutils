@@ -183,7 +183,7 @@ func (n *NameNode) IterateNameNodeWithValue(f func(NameNodeInterface, any) (any,
 	for key := range children {
 		keys = append(keys, key)
 	}
-	keys, _ = SortNames(keys)
+	SortNames(keys)
 	for _, name := range keys {
 		if err := children[name].IterateNameNodeWithValue(f, res); err != nil {
 			return err

@@ -31,6 +31,8 @@ type SignOption struct {
 	DoEMethod    DenialOfExistenceMethod
 	NSEC3Salt    string
 	NSEC3Iterate uint16
+
+	ZONEMDEnabled bool
 }
 
 func (o *SignOption) GetBeforSign() time.Duration {
@@ -112,6 +114,32 @@ func (d *DNSKEY) IsZSK() bool {
 	return d.rr.Flags == 256
 }
 
+func Sign(z ZoneInterface, opt SignOption, dnskeys []*DNSKEY, generator Generator) error {
+	if err := AddDNSKEY(z, dnskeys, uint32(0), generator); err != nil {
+		return fmt.Errorf("failed to add DNSKEY: %w", err)
+	}
+	if opt.ZONEMDEnabled {
+		if err := AddZONEMDPlaceholder(z, nil, generator); err != nil {
+			return fmt.Errorf("failed to add ZONEMD: %w", err)
+		}
+	}
+	if err := CreateDoE(z, opt, generator); err != nil {
+		return fmt.Errorf("failed to add NSEC or NSEC3: %w", err)
+	}
+	if err := SignZone(z, opt, dnskeys, generator); err != nil {
+		return fmt.Errorf("failed to sign zone: %w", err)
+	}
+	if opt.ZONEMDEnabled {
+		if err := UpdateZONEMDDigest(z, generator); err != nil {
+			return fmt.Errorf("failed to update ZONEMD digest: %w", err)
+		}
+		if err := SignNode(z.GetRootNode(), opt, dnskeys, generator, true, true); err != nil {
+			return fmt.Errorf("failed to sign zone apex: %w", err)
+		}
+	}
+	return nil
+}
+
 func AddDNSKEY(z ZoneInterface, dnskeys []*DNSKEY, ttl uint32, generator Generator) error {
 	if len(dnskeys) == 0 {
 		return fmt.Errorf("empty DNSKEYs")
@@ -145,23 +173,29 @@ func SignZone(z ZoneInterface, opt SignOption, dnskeys []*DNSKEY, generator Gene
 		auth := a.(bool)
 		if z.GetName() != nni.GetName() {
 			if nsRRset := nni.GetRRSet(dns.TypeNS); nsRRset != nil {
-				return false, signNode(nni, opt, dnskeys, generator, nni == z.GetRootNode(), true)
+				return false, SignNode(nni, opt, dnskeys, generator, nni == z.GetRootNode(), true)
 			}
 		}
-		return auth, signNode(nni, opt, dnskeys, generator, nni == z.GetRootNode(), auth)
+		return auth, SignNode(nni, opt, dnskeys, generator, nni == z.GetRootNode(), auth)
 	}, true)
 }
 
-func signNode(nni NameNodeInterface, opt SignOption, dnskeys []*DNSKEY, generator Generator, apex, auth bool) error {
+func SignNode(nni NameNodeInterface, opt SignOption, dnskeys []*DNSKEY, generator Generator, apex, auth bool) error {
+	if generator == nil {
+		generator = &DefaultGenerator{}
+	}
 	if !auth {
 		return nil
 	}
-	rrsig, err := GetRRSetOrCreate(nni, dns.TypeRRSIG, 0, generator)
+	rrsig, err := generator.NewRRSet(nni.GetName(), 0, nni.GetClass(), dns.TypeRRSIG)
 	if err != nil {
 		return err
 	}
 	err = nni.IterateNameRRSet(func(ri RRSetInterface) error {
 		if ri.GetRRtype() == dns.TypeNS && !apex {
+			return nil
+		}
+		if ri.GetRRtype() == dns.TypeRRSIG {
 			return nil
 		}
 		rrsigRRs, err := SignRRSet(ri, opt, dnskeys)

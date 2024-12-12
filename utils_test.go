@@ -2,6 +2,7 @@ package dnsutils_test
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/miekg/dns"
 	"github.com/mimuret/dnsutils"
@@ -626,7 +627,7 @@ var _ = Describe("utils", func() {
 				res, err = dnsutils.ConvertStringToType("TYPE65535")
 			})
 			It("returns code", func() {
-				Expect(res).To(Equal(uint16(65535)))
+				Expect(res).To(Equal(uint16(math.MaxUint16)))
 			})
 			It("no error", func() {
 				Expect(err).To(Succeed())
@@ -686,7 +687,7 @@ var _ = Describe("utils", func() {
 				res, err = dnsutils.ConvertStringToClass("CLASS65535")
 			})
 			It("returns code", func() {
-				Expect(res).To(Equal(dns.Class(65535)))
+				Expect(res).To(Equal(dns.Class(math.MaxUint16)))
 			})
 			It("no error", func() {
 				Expect(err).To(Succeed())
@@ -970,7 +971,6 @@ var _ = Describe("utils", func() {
 		var (
 			names []string
 			err   error
-			res   []string
 		)
 		When("invalid names", func() {
 			BeforeEach(func() {
@@ -978,7 +978,7 @@ var _ = Describe("utils", func() {
 					"example.jp.",
 					".example.jp",
 				}
-				res, err = dnsutils.SortNames(names)
+				err = dnsutils.SortNames(names)
 			})
 			It("return err", func() {
 				Expect(err).To(Equal(dnsutils.ErrBadName))
@@ -986,7 +986,6 @@ var _ = Describe("utils", func() {
 					"example.jp.",
 					".example.jp",
 				}))
-				Expect(res).To(BeNil())
 			})
 		})
 		When("valid names", func() {
@@ -1001,11 +1000,11 @@ var _ = Describe("utils", func() {
 					"z.example",
 					"\001.z.example",
 				}
-				res, err = dnsutils.SortNames(names)
+				err = dnsutils.SortNames(names)
 			})
 			It("return err", func() {
 				Expect(err).To(Succeed())
-				Expect(res).To(Equal([]string{
+				Expect(names).To(Equal([]string{
 					"a.example",
 					"yljkjljk.a.example",
 					"Z.a.example",
@@ -1024,11 +1023,11 @@ var _ = Describe("utils", func() {
 					"*.example.jp.",
 					"\000.example.jp.",
 				}
-				res, err = dnsutils.SortNames(names)
+				err = dnsutils.SortNames(names)
 			})
 			It("return err", func() {
 				Expect(err).To(Succeed())
-				Expect(res).To(Equal([]string{
+				Expect(names).To(Equal([]string{
 					"example.jp.",
 					"\000.example.jp.",
 					"*.example.jp.",
