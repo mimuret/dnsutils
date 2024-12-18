@@ -21,14 +21,18 @@ var _ = Describe("Test nsec.go", func() {
 		inception      = uint32(1704067200)
 		expiration     = uint32(1893456000)
 		nsecSignOption = dnsutils.SignOption{
-			DoEMethod:  dnsutils.DenialOfExistenceMethodNSEC,
-			Inception:  &inception,
-			Expiration: &expiration,
+			DoEMethod:     dnsutils.DenialOfExistenceMethodNSEC,
+			Inception:     &inception,
+			Expiration:    &expiration,
+			ZONEMDEnabled: &False,
+			CDSEnabled:    &False,
 		}
 		nsec3SignOption = dnsutils.SignOption{
-			DoEMethod:  dnsutils.DenialOfExistenceMethodNSEC3,
-			Inception:  &inception,
-			Expiration: &expiration,
+			DoEMethod:     dnsutils.DenialOfExistenceMethodNSEC3,
+			Inception:     &inception,
+			Expiration:    &expiration,
+			ZONEMDEnabled: &False,
+			CDSEnabled:    &False,
 		}
 		zsk             *dnsutils.DNSKEY
 		ksk             *dnsutils.DNSKEY
@@ -87,7 +91,7 @@ var _ = Describe("Test nsec.go", func() {
 					z = &dnsutils.Zone{}
 					err = z.Read(bytes.NewBuffer(testSignZone))
 					Expect(err).To(Succeed())
-					err = dnsutils.AddDNSKEY(z, dnskeys, uint32(0), nil)
+					err = dnsutils.AddDNSKEY(z, nsecSignOption, dnskeys, nil)
 					Expect(err).To(Succeed())
 					err = dnsutils.CreateDoE(z, nsecSignOption, nil)
 					Expect(err).To(Succeed())
@@ -129,7 +133,7 @@ var _ = Describe("Test nsec.go", func() {
 					z = &dnsutils.Zone{}
 					err = z.Read(bytes.NewBuffer(testSignZone))
 					Expect(err).To(Succeed())
-					err = dnsutils.AddDNSKEY(z, dnskeys, uint32(0), nil)
+					err = dnsutils.AddDNSKEY(z, nsec3SignOption, dnskeys, nil)
 					Expect(err).To(Succeed())
 					err = dnsutils.CreateDoE(z, nsec3SignOption, nil)
 					Expect(err).To(Succeed())

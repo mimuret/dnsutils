@@ -22,17 +22,19 @@ var (
 )
 
 type SignOption struct {
-	BeforeSign *time.Duration
-	Expiry     *time.Duration
-	Inception  *uint32
-	Expiration *uint32
-	// TODO: AddCDS     bool
-	// TODO: AddCDNSKEY bool
+	BeforeSign   *time.Duration
+	Expiry       *time.Duration
+	Inception    *uint32
+	Expiration   *uint32
 	DoEMethod    DenialOfExistenceMethod
 	NSEC3Salt    string
 	NSEC3Iterate uint16
 
-	ZONEMDEnabled bool
+	DNSKEYTTL *uint32
+
+	ZONEMDEnabled  *bool
+	CDSEnabled     *bool
+	CDNSKEYEnabled *bool
 }
 
 func (o *SignOption) GetBeforSign() time.Duration {
@@ -63,12 +65,39 @@ func (o *SignOption) GetExpiration() uint32 {
 	return *o.Expiration
 }
 
+func (o *SignOption) GetDNSKEYTTL() uint32 {
+	if o.DNSKEYTTL == nil {
+		return uint32(3600)
+	}
+	return *o.DNSKEYTTL
+}
+
 func (o *SignOption) GetNSEC3Salt() string {
 	return o.NSEC3Salt
 }
 
 func (o *SignOption) GetNSEC3Iterate() uint16 {
 	return o.NSEC3Iterate
+}
+
+func (o *SignOption) GetZONEMDEnabled() bool {
+	if o.ZONEMDEnabled == nil {
+		return true
+	}
+	return *o.ZONEMDEnabled
+}
+
+func (o *SignOption) GetCDSEnabled() bool {
+	if o.CDSEnabled == nil {
+		return true
+	}
+	return *o.CDSEnabled
+}
+func (o *SignOption) GetCDNSKEYEnabled() bool {
+	if o.CDSEnabled == nil {
+		return true
+	}
+	return *o.CDSEnabled
 }
 
 type DNSKEY struct {
@@ -115,10 +144,10 @@ func (d *DNSKEY) IsZSK() bool {
 }
 
 func Sign(z ZoneInterface, opt SignOption, dnskeys []*DNSKEY, generator Generator) error {
-	if err := AddDNSKEY(z, dnskeys, uint32(0), generator); err != nil {
+	if err := AddDNSKEY(z, opt, dnskeys, generator); err != nil {
 		return fmt.Errorf("failed to add DNSKEY: %w", err)
 	}
-	if opt.ZONEMDEnabled {
+	if opt.GetZONEMDEnabled() {
 		if err := AddZONEMDPlaceholder(z, nil, generator); err != nil {
 			return fmt.Errorf("failed to add ZONEMD: %w", err)
 		}
@@ -129,7 +158,7 @@ func Sign(z ZoneInterface, opt SignOption, dnskeys []*DNSKEY, generator Generato
 	if err := SignZone(z, opt, dnskeys, generator); err != nil {
 		return fmt.Errorf("failed to sign zone: %w", err)
 	}
-	if opt.ZONEMDEnabled {
+	if opt.GetZONEMDEnabled() {
 		if err := UpdateZONEMDDigest(z, generator); err != nil {
 			return fmt.Errorf("failed to update ZONEMD digest: %w", err)
 		}
@@ -140,26 +169,51 @@ func Sign(z ZoneInterface, opt SignOption, dnskeys []*DNSKEY, generator Generato
 	return nil
 }
 
-func AddDNSKEY(z ZoneInterface, dnskeys []*DNSKEY, ttl uint32, generator Generator) error {
+func AddDNSKEY(z ZoneInterface, opt SignOption, dnskeys []*DNSKEY, generator Generator) error {
 	if len(dnskeys) == 0 {
 		return fmt.Errorf("empty DNSKEYs")
 	}
-	if ttl == 0 {
-		ttl = 3600
-	}
-	rrset, err := GetRRSetOrCreate(z.GetRootNode(), dns.TypeDNSKEY, ttl, generator)
+	rrset, err := GetRRSetOrCreate(z.GetRootNode(), dns.TypeDNSKEY, opt.GetDNSKEYTTL(), generator)
 	if err != nil {
 		return fmt.Errorf("failed to create DNSKEY rrset: %w", err)
+	}
+	cdsRRSet, err := GetRRSetOrCreate(z.GetRootNode(), dns.TypeCDS, opt.GetDNSKEYTTL(), generator)
+	if err != nil {
+		return fmt.Errorf("failed to create CDS rrset: %w", err)
+	}
+	cdnskeyRRset, err := GetRRSetOrCreate(z.GetRootNode(), dns.TypeCDNSKEY, opt.GetDNSKEYTTL(), generator)
+	if err != nil {
+		return fmt.Errorf("failed to create CDNSKEY rrset: %w", err)
 	}
 	for _, dnskey := range dnskeys {
 		rr := dnskey.GetRR()
 		rr.Hdr.Ttl = rrset.GetTTL()
 		if err := rrset.AddRR(rr); err != nil {
-			return fmt.Errorf("failed to add DNSKEY RR: %w", err)
+			return fmt.Errorf("failed to add DNSKEY RR to rrset: %w", err)
+		}
+		if opt.GetCDSEnabled() && dnskey.IsKSK() {
+			if err := cdsRRSet.AddRR(rr.ToDS(dns.SHA256).ToCDS()); err != nil {
+				return fmt.Errorf("failed to add CDS RR to rrset: %w", err)
+			}
+		}
+		if opt.GetCDNSKEYEnabled() && dnskey.IsKSK() {
+			if err := cdnskeyRRset.AddRR(rr.ToCDNSKEY()); err != nil {
+				return fmt.Errorf("failed to add CDNSKEY RR to rrset: %w", err)
+			}
 		}
 	}
 	if err := z.GetRootNode().SetRRSet(rrset); err != nil {
 		return fmt.Errorf("failed to set DNSKEY rrset: %w", err)
+	}
+	if opt.GetCDSEnabled() {
+		if err := z.GetRootNode().SetRRSet(cdsRRSet); err != nil {
+			return fmt.Errorf("failed to set CDS rrset: %w", err)
+		}
+	}
+	if opt.GetCDNSKEYEnabled() {
+		if err := z.GetRootNode().SetRRSet(cdnskeyRRset); err != nil {
+			return fmt.Errorf("failed to set CDNSKEY rrset: %w", err)
+		}
 	}
 	return nil
 }

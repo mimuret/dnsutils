@@ -6,11 +6,15 @@ import (
 	"errors"
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/mimuret/dnsutils"
 	"github.com/mimuret/dnsutils/testtool"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var True = true
+var False = false
 
 //go:embed testdata/sign/example.jp.source
 var testSignZone []byte
@@ -37,9 +41,11 @@ var _ = Describe("Test sign.go", func() {
 		inception      = uint32(1704067200)
 		expiration     = uint32(1893456000)
 		nsecSignOption = dnsutils.SignOption{
-			DoEMethod:  dnsutils.DenialOfExistenceMethodNSEC,
-			Inception:  &inception,
-			Expiration: &expiration,
+			DoEMethod:     dnsutils.DenialOfExistenceMethodNSEC,
+			Inception:     &inception,
+			Expiration:    &expiration,
+			ZONEMDEnabled: &False,
+			CDSEnabled:    &False,
 		}
 		zsk              *dnsutils.DNSKEY
 		ksk              *dnsutils.DNSKEY
@@ -161,7 +167,7 @@ var _ = Describe("Test sign.go", func() {
 		})
 		When("empty key", func() {
 			BeforeEach(func() {
-				err = dnsutils.AddDNSKEY(z, nil, uint32(0), nil)
+				err = dnsutils.AddDNSKEY(z, dnsutils.SignOption{}, nil, nil)
 			})
 			It("returns err", func() {
 				Expect(err).To(HaveOccurred())
@@ -169,18 +175,36 @@ var _ = Describe("Test sign.go", func() {
 		})
 		When("failed to create DNSKEY rrset", func() {
 			BeforeEach(func() {
-				err = dnsutils.AddDNSKEY(z, nil, uint32(0), &testtool.TestGenerator{NewRRSetErr: errors.New("")})
+				err = dnsutils.AddDNSKEY(z, dnsutils.SignOption{}, nil, &testtool.TestGenerator{NewRRSetErr: errors.New("")})
 			})
 			It("returns err", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
 		When("add valid DNSKEY", func() {
-			BeforeEach(func() {
-				err = dnsutils.AddDNSKEY(z, []*dnsutils.DNSKEY{ksk}, uint32(0), nil)
+			When("cds/cdnskey disabled", func() {
+				BeforeEach(func() {
+					err = dnsutils.AddDNSKEY(z, dnsutils.SignOption{CDSEnabled: &False, CDNSKEYEnabled: &False}, []*dnsutils.DNSKEY{ksk}, nil)
+				})
+				It("succeed", func() {
+					Expect(err).To(Succeed())
+					cdsRRSet := z.GetRootNode().GetRRSet(dns.TypeCDS)
+					Expect(cdsRRSet).To(BeNil())
+					cdnskeyRRSet := z.GetRootNode().GetRRSet(dns.TypeCDNSKEY)
+					Expect(cdnskeyRRSet).To(BeNil())
+				})
 			})
-			It("succeed", func() {
-				Expect(err).To(Succeed())
+			When("cds/cdnskey enabled", func() {
+				BeforeEach(func() {
+					err = dnsutils.AddDNSKEY(z, dnsutils.SignOption{}, []*dnsutils.DNSKEY{ksk}, nil)
+				})
+				It("succeed", func() {
+					Expect(err).To(Succeed())
+					cdsRRSet := z.GetRootNode().GetRRSet(dns.TypeCDS)
+					Expect(cdsRRSet).NotTo(BeNil())
+					cdnskeyRRSet := z.GetRootNode().GetRRSet(dns.TypeCDNSKEY)
+					Expect(cdnskeyRRSet).NotTo(BeNil())
+				})
 			})
 		})
 	})
@@ -190,7 +214,7 @@ var _ = Describe("Test sign.go", func() {
 			z = &dnsutils.Zone{}
 			err = z.Read(testZoneNormalBuf)
 			Expect(err).To(Succeed())
-			err = dnsutils.AddDNSKEY(z, dnskeys, uint32(0), nil)
+			err = dnsutils.AddDNSKEY(z, nsecSignOption, dnskeys, nil)
 			Expect(err).To(Succeed())
 			err = dnsutils.CreateDoE(z, nsecSignOption, nil)
 			Expect(err).To(Succeed())
