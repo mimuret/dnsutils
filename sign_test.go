@@ -226,4 +226,96 @@ var _ = Describe("Test sign.go", func() {
 			Expect(dnsutils.IsEqualsAllTree(z.GetRootNode(), nsec_signed_zone.GetRootNode(), false)).To(BeTrue())
 		})
 	})
+	Context("SignRRSet", func() {
+		BeforeEach(func() {
+			z = &dnsutils.Zone{}
+			err = z.Read(bytes.NewBuffer(testSignZone))
+			Expect(err).To(Succeed())
+		})
+		When("rrset type is not DNSKEY", func() {
+			It("signs only with the ZSK", func() {
+				aSet, aErr := dnsutils.NewRRSet("test.hoge.example.jp.", 3600, dns.ClassINET, dns.TypeA, nil)
+				Expect(aErr).To(Succeed())
+				Expect(aSet.AddRR(testtool.MustNewRR("test.hoge.example.jp. 3600 IN A 192.168.2.2"))).To(Succeed())
+
+				rrsigs, sErr := dnsutils.SignRRSet(aSet, nsecSignOption, dnskeys)
+				Expect(sErr).To(Succeed())
+				Expect(rrsigs).To(HaveLen(1))
+				Expect(rrsigs[0].KeyTag).To(Equal(zsk.GetRR().KeyTag()))
+			})
+		})
+		When("rrset type is DNSKEY", func() {
+			It("signs only with the KSK", func() {
+				dnskeySet, dErr := dnsutils.NewRRSet("example.jp.", 3600, dns.ClassINET, dns.TypeDNSKEY, nil)
+				Expect(dErr).To(Succeed())
+				kskRR := dns.Copy(ksk.GetRR())
+				kskRR.Header().Ttl = 3600
+				zskRR := dns.Copy(zsk.GetRR())
+				zskRR.Header().Ttl = 3600
+				Expect(dnskeySet.AddRR(kskRR)).To(Succeed())
+				Expect(dnskeySet.AddRR(zskRR)).To(Succeed())
+
+				rrsigs, sErr := dnsutils.SignRRSet(dnskeySet, nsecSignOption, dnskeys)
+				Expect(sErr).To(Succeed())
+				Expect(rrsigs).To(HaveLen(1))
+				Expect(rrsigs[0].KeyTag).To(Equal(ksk.GetRR().KeyTag()))
+			})
+		})
+		When("the rrset has no records", func() {
+			// SignRRSet does not guard against this: it hands the empty
+			// slice straight to dns.RRSIG.Sign, which indexes rrset[0]
+			// unconditionally and panics rather than returning an error.
+			// Documented here as current behavior, not asserted as desired.
+			It("panics instead of returning an error", func() {
+				emptySet, eErr := dnsutils.NewRRSet("test.hoge.example.jp.", 3600, dns.ClassINET, dns.TypeA, nil)
+				Expect(eErr).To(Succeed())
+
+				Expect(func() {
+					_, _ = dnsutils.SignRRSet(emptySet, nsecSignOption, dnskeys)
+				}).To(Panic())
+			})
+		})
+	})
+	Context("SignNode", func() {
+		var sub1Node dnsutils.NameNodeInterface
+		BeforeEach(func() {
+			z = &dnsutils.Zone{}
+			err = z.Read(bytes.NewBuffer(testSignZone))
+			Expect(err).To(Succeed())
+			var ok bool
+			sub1Node, ok = z.GetRootNode().GetNameNode("sub1.example.jp.")
+			Expect(ok).To(BeTrue())
+		})
+		When("auth is false", func() {
+			It("does not sign anything", func() {
+				Expect(dnsutils.SignNode(sub1Node, nsecSignOption, dnskeys, nil, false, false)).To(Succeed())
+				Expect(sub1Node.GetRRSet(dns.TypeRRSIG)).To(BeNil())
+			})
+		})
+		When("auth is true but the node is not the zone apex (a delegation)", func() {
+			It("signs DS but does not sign the NS rrset", func() {
+				Expect(dnsutils.SignNode(sub1Node, nsecSignOption, dnskeys, nil, false, true)).To(Succeed())
+				rrsigSet := sub1Node.GetRRSet(dns.TypeRRSIG)
+				Expect(rrsigSet).NotTo(BeNil())
+				var covered []uint16
+				for _, rr := range rrsigSet.GetRRs() {
+					covered = append(covered, rr.(*dns.RRSIG).TypeCovered)
+				}
+				Expect(covered).To(ConsistOf(dns.TypeDS))
+			})
+		})
+		When("the node is the zone apex", func() {
+			It("also signs the NS rrset", func() {
+				rootNode := z.GetRootNode()
+				Expect(dnsutils.SignNode(rootNode, nsecSignOption, dnskeys, nil, true, true)).To(Succeed())
+				rrsigSet := rootNode.GetRRSet(dns.TypeRRSIG)
+				Expect(rrsigSet).NotTo(BeNil())
+				var covered []uint16
+				for _, rr := range rrsigSet.GetRRs() {
+					covered = append(covered, rr.(*dns.RRSIG).TypeCovered)
+				}
+				Expect(covered).To(ContainElement(dns.TypeNS))
+			})
+		})
+	})
 })
