@@ -75,19 +75,17 @@ type matchDNSMsgEDE struct {
 }
 
 func (m *matchDNSMsgEDE) Match(d *dns.Msg) bool {
-	if len(d.Extra) == 0 {
-		// NO EDNS
-		return false
-	}
-	opt, ok := d.Extra[0].(*dns.OPT)
-	if !ok {
-		return false
-	}
-	for _, opt := range opt.Option {
-		ede, ok := opt.(*dns.EDNS0_EDE)
-		if ok {
-			if ede.InfoCode == m.target {
-				return true
+	for _, rr := range d.Extra {
+		opt, ok := rr.(*dns.OPT)
+		if !ok {
+			continue
+		}
+		for _, opt := range opt.Option {
+			ede, ok := opt.(*dns.EDNS0_EDE)
+			if ok {
+				if ede.InfoCode == m.target {
+					return true
+				}
 			}
 		}
 	}
