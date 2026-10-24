@@ -135,7 +135,9 @@ func (d *Dig) ExchangeContext(ctx context.Context, m *dns.Msg, options ...Option
 
 func (d *Dig) ExchangeContextWithRTT(ctx context.Context, m *dns.Msg, options ...Option) (*dns.Msg, time.Duration, error) {
 	for _, opt := range options {
-		opt.Option(d)
+		if err := opt.Option(d); err != nil {
+			return nil, 0, err
+		}
 	}
 	if strings.HasPrefix(d.Client.Net, "http") {
 		return d.dialHTTP(ctx, m)
