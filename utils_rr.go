@@ -5,9 +5,17 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"sync"
 
 	"github.com/miekg/dns"
 )
+
+var compareRRBufPool = sync.Pool{
+	New: func() any {
+		buf := make([]byte, math.MaxUint16)
+		return &buf
+	},
+}
 
 func SortRRs(rrs []dns.RR) error {
 	var err error
@@ -40,8 +48,12 @@ func CompareRR(a, b dns.RR) (int, error) {
 	}
 
 	// rdata
-	bufA := make([]byte, math.MaxUint16)
-	bufB := make([]byte, math.MaxUint16)
+	bufAPtr := compareRRBufPool.Get().(*[]byte)
+	bufBPtr := compareRRBufPool.Get().(*[]byte)
+	defer compareRRBufPool.Put(bufAPtr)
+	defer compareRRBufPool.Put(bufBPtr)
+	bufA := *bufAPtr
+	bufB := *bufBPtr
 	offA, err := dns.PackRR(a, bufA, 0, nil, false)
 	if err != nil {
 		return 0, fmt.Errorf("failed to pack RR: %w", err)
