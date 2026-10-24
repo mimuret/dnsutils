@@ -30,8 +30,7 @@ func ConvertToStringToNumber[T constraints.Integer](def map[string]T, prefix, s 
 	if t, ok = def[s]; ok {
 		return t, nil
 	}
-	if strings.HasPrefix(s, prefix) {
-		v := strings.TrimLeft(s, prefix)
+	if v, ok := strings.CutPrefix(s, prefix); ok {
 		res, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			return 0, ErrInvalid
