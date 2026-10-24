@@ -94,10 +94,10 @@ func (o *SignOption) GetCDSEnabled() bool {
 	return *o.CDSEnabled
 }
 func (o *SignOption) GetCDNSKEYEnabled() bool {
-	if o.CDSEnabled == nil {
+	if o.CDNSKEYEnabled == nil {
 		return true
 	}
-	return *o.CDSEnabled
+	return *o.CDNSKEYEnabled
 }
 
 type DNSKEY struct {

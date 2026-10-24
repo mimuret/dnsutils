@@ -101,6 +101,9 @@ func (d *DDNS) CheckZoneSection(z dnsutils.ZoneInterface, msg *dns.Msg) int {
 	if !dnsutils.Equals(z.GetName(), msg.Question[0].Name) {
 		return dns.RcodeNotAuth
 	}
+	if z.GetClass() != dns.Class(msg.Question[0].Qclass) {
+		return dns.RcodeNotAuth
+	}
 	return dns.RcodeSuccess
 }
 
@@ -479,7 +482,7 @@ func (d *DDNS) UpdateRemoveRR(z dnsutils.ZoneInterface, rr dns.RR) error {
 		}
 	} else {
 		// Delete An RRset
-		if dnsutils.Equals(rr.Header().Name, z.GetName()) && rr.Header().Rrtype == dns.TypeSOA || rr.Header().Rrtype == dns.TypeNS {
+		if dnsutils.Equals(rr.Header().Name, z.GetName()) && (rr.Header().Rrtype == dns.TypeSOA || rr.Header().Rrtype == dns.TypeNS) {
 			// can not remove APEX SOA, NS
 			return nil
 		} else {

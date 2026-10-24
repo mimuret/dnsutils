@@ -204,7 +204,10 @@ func (n *NameNode) AddChildNameNode(nn NameNodeInterface) error {
 	if _, ok := n.children()[nn.GetName()]; ok {
 		return ErrChildExist
 	}
-	cMap := n.children()
+	cMap := map[string]NameNodeInterface{}
+	for name, child := range n.children() {
+		cMap[name] = child
+	}
 	cMap[nn.GetName()] = nn
 	n.childrenValue.Store(cMap)
 	return nil
@@ -243,7 +246,10 @@ func (n *NameNode) SetRRSet(set RRSetInterface) error {
 	}
 	n.Lock()
 	defer n.Unlock()
-	rrsetMap := n.rrsetMap()
+	rrsetMap := map[uint16]RRSetInterface{}
+	for rrtype, s := range n.rrsetMap() {
+		rrsetMap[rrtype] = s
+	}
 	rrsetMap[set.GetRRtype()] = set
 
 	switch set.GetRRtype() {
@@ -268,8 +274,13 @@ func (n *NameNode) SetRRSet(set RRSetInterface) error {
 func (n *NameNode) RemoveRRSet(rrtype uint16) error {
 	n.Lock()
 	defer n.Unlock()
-	rrsetMap := n.rrsetMap()
-	delete(rrsetMap, rrtype)
+	rrsetMap := map[uint16]RRSetInterface{}
+	for rt, s := range n.rrsetMap() {
+		if rt == rrtype {
+			continue
+		}
+		rrsetMap[rt] = s
+	}
 	n.rrsetValue.Store(rrsetMap)
 	return nil
 }
