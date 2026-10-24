@@ -41,11 +41,12 @@ var _ = Describe("Test sign.go", func() {
 		inception      = uint32(1704067200)
 		expiration     = uint32(1893456000)
 		nsecSignOption = dnsutils.SignOption{
-			DoEMethod:     dnsutils.DenialOfExistenceMethodNSEC,
-			Inception:     &inception,
-			Expiration:    &expiration,
-			ZONEMDEnabled: &False,
-			CDSEnabled:    &False,
+			DoEMethod:      dnsutils.DenialOfExistenceMethodNSEC,
+			Inception:      &inception,
+			Expiration:     &expiration,
+			ZONEMDEnabled:  &False,
+			CDSEnabled:     &False,
+			CDNSKEYEnabled: &False,
 		}
 		zsk              *dnsutils.DNSKEY
 		ksk              *dnsutils.DNSKEY
