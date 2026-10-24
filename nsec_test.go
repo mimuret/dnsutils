@@ -338,18 +338,17 @@ a.b.c.example.jp. 3600 IN A 192.0.2.1
 				Expect(nni.GetRRSet(dns.TypeNSEC)).NotTo(BeNil())
 				Expect(nni.GetRRSet(dns.TypeRRSIG)).NotTo(BeNil())
 			})
-			// This does NOT succeed: dns.HashName (vendored github.com/miekg/dns)
-			// packs the name into a fixed 255-byte buffer and then slices one
-			// byte past it, panicking with "slice bounds out of range [:256]
-			// with capacity 255" for any owner name that is exactly 255 wire
-			// octets long. Documented here as current behavior, not asserted
-			// as desired; a real zone with a maximum-length name cannot be
-			// NSEC3-signed today.
-			It("panics while hashing the maximum-length owner name", func() {
+			// github.com/miekg/dns v1.1.56 panicked here: dns.HashName packed
+			// the name into a fixed 255-byte buffer and then sliced one byte
+			// past it ("slice bounds out of range [:256] with capacity 255")
+			// for any owner name that is exactly 255 wire octets long, because
+			// dns.PackDomainName itself could overrun a buffer sized exactly
+			// to the name's length without returning an error. Fixed upstream
+			// by v1.1.73 (see go.mod); this now signs cleanly.
+			It("signs NSEC3 zones without error", func() {
 				Expect(dnsutils.AddDNSKEY(z, nsec3SignOption, dnskeys, nil)).To(Succeed())
-				Expect(func() {
-					_ = dnsutils.CreateDoE(z, nsec3SignOption, nil)
-				}).To(Panic())
+				Expect(dnsutils.CreateDoE(z, nsec3SignOption, nil)).To(Succeed())
+				Expect(dnsutils.SignZone(z, nsec3SignOption, dnskeys, nil)).To(Succeed())
 			})
 		})
 		When("the zone apex itself is long enough that its hashed NSEC3 owner name would overflow 255 octets", func() {
